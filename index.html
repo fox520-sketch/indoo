@@ -1473,6 +1473,44 @@
     }
   }
 
+
+
+  function createAnchorFromCurrentPose() {
+    const pose = latestPose();
+    if (!pose || !Number.isFinite(Number(pose.x)) || !Number.isFinite(Number(pose.y))) {
+      setMessage("目前沒有可用位置，請先開始追蹤或設定起點。");
+      return;
+    }
+
+    const previousEditorName = $("editorNameInput")?.value || "";
+    const previousSemantic = $("editorElementSemantic")?.value || "walkable";
+    const inferredHeading = Math.round(normalizeAngle(
+      Number.isFinite(Number(pose.heading)) ? Number(pose.heading) : (state.orientation.heading || 0)
+    ));
+    const name = previousEditorName.trim() || generateAnchorName("定位點");
+
+    if ($("editorNameInput")) $("editorNameInput").value = name;
+    if ($("editorElementSemantic")) $("editorElementSemantic").value = "landmark";
+
+    const result = createMapAnchorAt(
+      { x: Number(pose.x || 0), y: Number(pose.y || 0) },
+      { name, heading: inferredHeading, source: "current-pose" }
+    );
+
+    if (result?.anchor) {
+      if ($("anchorName")) $("anchorName").value = result.anchor.name || name;
+      if ($("xValue")) $("xValue").value = Number(result.anchor.x || 0).toFixed(2);
+      if ($("yValue")) $("yValue").value = Number(result.anchor.y || 0).toFixed(2);
+      if ($("headingValueInput")) $("headingValueInput").value = result.anchor.heading == null ? "" : String(result.anchor.heading);
+      generateQr();
+      setMessage(`已將目前位置新增為標定點：${result.anchor.name}`);
+      switchPage("mapEditorPage");
+    }
+
+    if ($("editorNameInput")) $("editorNameInput").value = previousEditorName;
+    if ($("editorElementSemantic")) $("editorElementSemantic").value = previousSemantic;
+  }
+
   function applySoftGpsCorrection(sample, source = "gps-soft") {
     if (!sample) return;
     ensureGeoAnchorReference();
