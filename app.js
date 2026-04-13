@@ -1,42 +1,4 @@
-// v59 build marker
-// v58 build marker
-// v57 build marker
-// v56 build marker
-// v55 build marker
-// v54 build marker
-// v53 build marker
-// v52 build marker
-// v51 build marker
-// v50 build marker
-// v49 build marker
-// v48 build marker
-// v46 build marker
-// v44 build marker
-// v43 build marker
-// v41 build marker
-// v40 build marker
-// v39 build marker
-// v38 build marker
-// v37 build marker
-// v36 build marker
-// v35 build marker
-// v34 rebuild
-// v32 build marker
-// v31 build marker\n// v30 build marker
-// v29 build marker
-// v28 build marker
-// v27 build marker
-// v26 build marker
-// v25b build marker
-// v25 build marker
-// v24 build marker
-// v23 build marker
-// v22 build marker
-// v21 build marker
-// v20 build marker
-// v19 build marker
-// v17 build marker
-// v16 build marker
+// consolidated after maintenance fixes
 
 (() => {
   const SAMPLE_MS = 250;
@@ -55,6 +17,13 @@
   const MIN_VIEW_SCALE = 0.01; // v17 // v16
   const MAX_VIEW_SCALE = 4.8;
   const DEFAULT_WORLD_SCALE = 8;
+  const STORAGE_KEYS = Object.freeze({
+    navTrackPoints: "indoor_nav_track_points",
+    poseSmoothingAlpha: "indoor_pose_smoothing_alpha",
+    navHistory: "indoor_nav_history",
+    mapElements: "indoor_map_elements",
+    savedAnchors: "indoor_saved_anchors"
+  });
 
   const state = {
     permissionState: "idle",
@@ -147,6 +116,39 @@
   const $ = (id) => document.getElementById(id);
   const canvas = $("trackCanvas");
   const ctx = canvas.getContext("2d");
+
+  function loadJsonArrayStorage(key, normalizeItem) {
+    try {
+      const raw = localStorage.getItem(key);
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(parsed)) return [];
+      return typeof normalizeItem === "function"
+        ? parsed.map((item, idx) => normalizeItem(item, idx)).filter(Boolean)
+        : parsed;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveJsonStorage(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) {
+      console.warn(`localStorage write failed for ${key}`, e);
+      return false;
+    }
+  }
+
+  function loadNumberStorage(key, fallback) {
+    try {
+      const raw = localStorage.getItem(key);
+      const value = Number(raw);
+      return Number.isFinite(value) ? value : fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
 
   function activeCanvasScale(viewport) {
     return DEFAULT_CANVAS_SCALE * (viewport?.scale || 1);
@@ -897,17 +899,11 @@ function fmt(n, d = 2) {
 
 
   function loadNavTrackPoints() {
-    try {
-      const raw = localStorage.getItem("indoor_nav_track_points");
-      const parsed = raw ? JSON.parse(raw) : [];
-      state.navTrackPoints = Array.isArray(parsed) ? parsed.map((p, idx) => normalizeNavTrackPoint(p, idx)).filter(Boolean) : [];
-    } catch (e) {
-      state.navTrackPoints = [];
-    }
+    state.navTrackPoints = loadJsonArrayStorage(STORAGE_KEYS.navTrackPoints, normalizeNavTrackPoint);
   }
 
   function persistNavTrackPoints() {
-    localStorage.setItem("indoor_nav_track_points", JSON.stringify(state.navTrackPoints));
+    saveJsonStorage(STORAGE_KEYS.navTrackPoints, state.navTrackPoints);
   }
 
   function normalizeNavTrackPoint(p, idx = 0) {
@@ -1445,20 +1441,19 @@ function fmt(n, d = 2) {
   }
 
   function loadPoseSmoothingPreference() {
-    try {
-      const rawAlpha = localStorage.getItem("indoor_pose_smoothing_alpha");
-      const alpha = Number(rawAlpha);
-      if (Number.isFinite(alpha) && alpha >= 0.05 && alpha <= 0.50) {
-        state.poseSmoothingAlpha = alpha;
-      }
-    } catch (e) {}
+    const alpha = loadNumberStorage(STORAGE_KEYS.poseSmoothingAlpha, state.poseSmoothingAlpha);
+    if (Number.isFinite(alpha) && alpha >= 0.05 && alpha <= 0.50) {
+      state.poseSmoothingAlpha = alpha;
+    }
     refreshSmoothingUi();
   }
 
   function persistPoseSmoothingPreference() {
     try {
-      localStorage.setItem("indoor_pose_smoothing_alpha", String(state.poseSmoothingAlpha));
-    } catch (e) {}
+      localStorage.setItem(STORAGE_KEYS.poseSmoothingAlpha, String(state.poseSmoothingAlpha));
+    } catch (e) {
+      console.warn(`localStorage write failed for ${STORAGE_KEYS.poseSmoothingAlpha}`, e);
+    }
   }
 
   function refreshSmoothingUi() {
@@ -1721,142 +1716,6 @@ function fmt(n, d = 2) {
     }
 
   }
-
-
-  // Legacy drawing snapshot retained for reference; renamed to avoid overriding the real setNavTarget().
-  function drawTrackLegacySnapshot() {
-
-    ctx.clearRect(0, 0, TRACK_SIZE, TRACK_SIZE);
-    ctx.strokeStyle = "#cbd5e1";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(CENTER, 0);
-    ctx.lineTo(CENTER, TRACK_SIZE);
-    ctx.moveTo(0, CENTER);
-    ctx.lineTo(TRACK_SIZE, CENTER);
-    ctx.stroke();
-
-    drawMapElementsOnCanvas(ctx, true);
-
-    if (state.showAnchorOverlay && state.savedAnchors.length) {
-      ctx.font = "12px system-ui, sans-serif";
-      state.savedAnchors.forEach((a) => {
-        const x = CENTER + Number(a.x || 0) * DEFAULT_WORLD_SCALE;
-        const y = CENTER + Number(a.y || 0) * DEFAULT_WORLD_SCALE;
-
-        ctx.fillStyle = anchorDisplayColor(a);
-        ctx.beginPath();
-        ctx.arc(x, y, 6, 0, Math.PI * 2);
-        ctx.fill();
-
-        if (a.heading != null && Number.isFinite(Number(a.heading))) {
-          const rad = (Number(a.heading) * Math.PI) / 180;
-          ctx.strokeStyle = anchorDisplayColor(a);
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(x, y);
-          ctx.lineTo(x + Math.sin(rad) * 18, y - Math.cos(rad) * 18);
-          ctx.stroke();
-        }
-
-        const label = a.name || "anchor";
-        const textX = x + 10;
-        const textY = y - 10;
-        const metrics = ctx.measureText(label);
-        ctx.fillStyle = "rgba(255,255,255,0.9)";
-        ctx.fillRect(textX - 4, textY - 12, metrics.width + 8, 18);
-        ctx.fillStyle = anchorLabelColor(a);
-        ctx.fillText(label, textX, textY);
-      });
-    }
-
-    if (!state.trail.length) return;
-
-    ctx.strokeStyle = "#0f172a";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    state.trail.forEach((p, i) => {
-      const x = CENTER + p.x * DEFAULT_WORLD_SCALE;
-      const y = CENTER + p.y * DEFAULT_WORLD_SCALE;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    });
-    ctx.stroke();
-
-    const start = state.trail[0];
-    const last = latestPose();
-
-    const target = state.savedAnchors.find(a => a.id === state.navTargetId);
-    if (target) {
-      const points = state.routeMode === "multi" ? getSelectedRoutePoints() : [{ id: "__current__", x: Number(last.x||0), y: Number(last.y||0) }, { ...target, x: Number(target.x||0), y: Number(target.y||0) }];
-
-      points.forEach((p, i) => {
-        if (i === 0) return;
-        const prev = points[i - 1];
-        const x1 = CENTER + Number(prev.x || 0) * DEFAULT_WORLD_SCALE;
-        const y1 = CENTER + Number(prev.y || 0) * DEFAULT_WORLD_SCALE;
-        const x2 = CENTER + Number(p.x || 0) * DEFAULT_WORLD_SCALE;
-        const y2 = CENTER + Number(p.y || 0) * DEFAULT_WORLD_SCALE;
-        const activeLeg = i - 1 === state.activeLegIndex;
-
-        ctx.strokeStyle = activeLeg ? "#dc2626" : "#ea580c";
-        ctx.lineWidth = activeLeg ? 4 : 3;
-        ctx.setLineDash(activeLeg ? [10, 6] : [8, 8]);
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-
-        if (activeLeg) {
-          const ang = Math.atan2(y2 - y1, x2 - x1);
-          const arrowLen = 14;
-          ctx.fillStyle = "#dc2626";
-          ctx.beginPath();
-          ctx.moveTo(x2, y2);
-          ctx.lineTo(x2 - arrowLen * Math.cos(ang - Math.PI / 6), y2 - arrowLen * Math.sin(ang - Math.PI / 6));
-          ctx.lineTo(x2 - arrowLen * Math.cos(ang + Math.PI / 6), y2 - arrowLen * Math.sin(ang + Math.PI / 6));
-          ctx.closePath();
-          ctx.fill();
-        }
-      });
-      ctx.setLineDash([]);
-
-      points.slice(1).forEach((p, idx) => {
-        const px = CENTER + Number(p.x || 0) * DEFAULT_WORLD_SCALE;
-        const py = CENTER + Number(p.y || 0) * DEFAULT_WORLD_SCALE;
-        ctx.fillStyle = idx === points.length - 2 ? "#ea580c" : "#f59e0b";
-        ctx.beginPath();
-        ctx.arc(px, py, idx === points.length - 2 ? 9 : 7, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.font = "12px system-ui, sans-serif";
-        const isFinal = idx === points.length - 2;
-        const isActiveNext = idx === state.activeLegIndex;
-        const label = isFinal
-          ? `${p.name || "目標"} / ${fmt(routeDistance(points), 1)}m`
-          : `${isActiveNext ? "下一點" : "中繼"}：${p.name || "waypoint"}`;
-        const lx = px + 12;
-        const ly = py + 18;
-        const metrics = ctx.measureText(label);
-        ctx.fillStyle = "rgba(255,255,255,0.92)";
-        ctx.fillRect(lx - 4, ly - 12, metrics.width + 8, 18);
-        ctx.fillStyle = idx === points.length - 2 ? "#9a3412" : "#92400e";
-        ctx.fillText(label, lx, ly);
-      });
-    }
-
-    ctx.fillStyle = "#16a34a";
-    ctx.beginPath();
-    ctx.arc(CENTER + start.x * DEFAULT_WORLD_SCALE, CENTER + start.y * DEFAULT_WORLD_SCALE, 8, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "#dc2626";
-    ctx.beginPath();
-    ctx.arc(CENTER + last.x * DEFAULT_WORLD_SCALE, CENTER + last.y * DEFAULT_WORLD_SCALE, 8, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-
   function setNavTarget() {
     const id = $("navTargetSelect").value;
     state.navTargetId = id;
@@ -2292,18 +2151,12 @@ function fmt(n, d = 2) {
 
 
   function loadNavHistory() {
-    try {
-      const raw = localStorage.getItem("indoor_nav_history");
-      state.navHistory = raw ? JSON.parse(raw) : [];
-      if (!Array.isArray(state.navHistory)) state.navHistory = [];
-    } catch (e) {
-      state.navHistory = [];
-    }
+    state.navHistory = loadJsonArrayStorage(STORAGE_KEYS.navHistory);
     renderNavHistory();
   }
 
   function persistNavHistory() {
-    localStorage.setItem("indoor_nav_history", JSON.stringify(state.navHistory));
+    saveJsonStorage(STORAGE_KEYS.navHistory, state.navHistory);
     renderNavHistory();
   }
 
@@ -2433,18 +2286,12 @@ function fmt(n, d = 2) {
 
 
   function loadMapElements() {
-    try {
-      const raw = localStorage.getItem("indoor_map_elements");
-      state.mapElements = raw ? JSON.parse(raw) : [];
-      if (!Array.isArray(state.mapElements)) state.mapElements = [];
-    } catch (e) {
-      state.mapElements = [];
-    }
+    state.mapElements = loadJsonArrayStorage(STORAGE_KEYS.mapElements);
     renderMapElements();
   }
 
   function persistMapElements() {
-    localStorage.setItem("indoor_map_elements", JSON.stringify(state.mapElements));
+    saveJsonStorage(STORAGE_KEYS.mapElements, state.mapElements);
     renderMapElements();
     drawEditorCanvas();
   }
@@ -3899,18 +3746,12 @@ function fmt(n, d = 2) {
 
 
   function loadSavedAnchors() {
-    try {
-      const raw = localStorage.getItem("indoor_saved_anchors");
-      const parsed = raw ? JSON.parse(raw) : [];
-      state.savedAnchors = Array.isArray(parsed) ? parsed.map((a, idx) => normalizeSavedAnchorRecord(a, idx)).filter(Boolean) : [];
-    } catch (e) {
-      state.savedAnchors = [];
-    }
+    state.savedAnchors = loadJsonArrayStorage(STORAGE_KEYS.savedAnchors, normalizeSavedAnchorRecord);
     renderSavedAnchors();
   }
 
   function persistSavedAnchors() {
-    localStorage.setItem("indoor_saved_anchors", JSON.stringify(state.savedAnchors));
+    saveJsonStorage(STORAGE_KEYS.savedAnchors, state.savedAnchors);
     renderSavedAnchors();
   }
 
