@@ -1,1153 +1,43 @@
-<!DOCTYPE html>
-<!-- v59 build marker -->
-<!-- v58 build marker -->
-<!-- v57 build marker -->
-<!-- v56 build marker -->
-<!-- v55 build marker -->
-<!-- v54 build marker -->
-<!-- v53 build marker -->
-<!-- v52 build marker -->
-<!-- v51 build marker -->
-<!-- v50 build marker -->
-<!-- v49 build marker -->
-<!-- v48 build marker -->
-<!-- v46 build marker -->
-<!-- v44 build marker -->
-<!-- v43 build marker -->
-<!-- v42 build marker -->
-<!-- v41 build marker -->
-<!-- v40 build marker -->
-<!-- v39 build marker -->
-<!-- v38 build marker -->
-<!-- v37 build marker -->
-<!-- v36 build marker -->
-<!-- v35 build marker -->
-<!-- v34 rebuild -->
-<!-- v32 build marker -->
-<!-- v31 build marker -->
-<!-- v30 build marker -->
-<!-- v29 build marker -->
-<!-- v28 build marker -->
-<!-- v27 build marker -->
-<!-- v26 build marker -->
-<!-- v25b build marker -->
-<!-- v25 build marker -->
-<!-- v24 build marker -->
-<!-- v23 build marker -->
-<!-- v22 build marker -->
-<!-- v21b build marker -->
-<!-- v21 build marker -->
-<!-- v20 build marker -->
-<!-- v19 build marker -->
-<!-- v17 build marker -->
-<!-- v16: min zoom updated to 1% in inline script -->
-<html lang="zh-Hant">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>室內導航 + QR 校正點工具</title>
-  <style>
-    :root {
-      --bg: #f8fafc;
-      --card: #ffffff;
-      --border: #dbe3ee;
-      --text: #0f172a;
-      --muted: #64748b;
-      --primary: #0f172a;
-      --primaryText: #ffffff;
-      --secondary: #eef2f7;
-      --danger: #b91c1c;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      background: rgba(248,250,252,.95);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--border);
-    }
-    .topbar-inner {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 12px 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    .navtabs {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .tabbtn {
-      border: 1px solid var(--border);
-      background: white;
-      border-radius: 999px;
-      padding: 10px 14px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .tabbtn.active {
-      background: var(--primary);
-      color: var(--primaryText);
-      border-color: var(--primary);
-    }
-    .wrap {
-      max-width: 1280px;
-      margin: 0 auto;
-      padding: 16px;
-    }
-    .page { display: none; }
-    .page.active { display: block; }
-    .grid {
-      display: grid;
-      grid-template-columns: 1.2fr 0.8fr;
-      gap: 16px;
-    }
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      box-shadow: 0 2px 12px rgba(15, 23, 42, 0.05);
-      overflow: hidden;
-    }
-    .card-header {
-      padding: 18px 18px 8px 18px;
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .card-content { padding: 18px; }
-    .badges { display: flex; flex-wrap: wrap; gap: 8px; }
-    .badge {
-      background: #eef2f7;
-      color: #334155;
-      border-radius: 999px;
-      padding: 6px 10px;
-      font-size: 12px;
-    }
-    .alert {
-      background: #f8fafc;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 12px 14px;
-      margin-bottom: 14px;
-      color: #334155;
-      line-height: 1.5;
-    }
-    .btn-row, .btns {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-bottom: 14px;
-    }
-    button, .download-link, a.btn {
-      border: 1px solid var(--border);
-      background: white;
-      color: var(--text);
-      border-radius: 16px;
-      padding: 11px 14px;
-      cursor: pointer;
-      font-size: 14px;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-    button.primary, .btn.primary {
-      background: var(--primary);
-      color: var(--primaryText);
-      border-color: var(--primary);
-    }
-    button.secondary {
-      background: var(--secondary);
-    }
-    button.danger {
-      background: #fee2e2;
-      color: var(--danger);
-      border-color: #fecaca;
-    }
-    button:disabled {
-      opacity: 0.55;
-      cursor: not-allowed;
-    }
-    .big-actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-    .big-actions button {
-      min-height: 68px;
-      justify-content: center;
-      font-size: 16px;
-      font-weight: 600;
-    }
-    .slider-box, .formbox {
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 14px;
-      margin-bottom: 14px;
-      background: white;
-    }
-    .slider-row {
-      display: flex;
-      justify-content: space-between;
-      color: var(--muted);
-      font-size: 14px;
-      margin-bottom: 8px;
-    }
-    input[type="range"], input[type="number"], input[type="text"], textarea {
-      width: 100%;
-    }
-    input[type="number"], input[type="text"], textarea {
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 10px 12px;
-      font-size: 15px;
-      background: white;
-    }
-    textarea { min-height: 96px; resize: vertical; }
-    .subtle {
-      color: var(--muted);
-      font-size: 12px;
-      margin-top: 8px;
-      line-height: 1.6;
-    }
-    .map-wrap, .preview {
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      overflow: hidden;
-      background: white;
-      padding: 10px;
-    }
-    canvas {
-      width: 100%;
-      height: auto;
-      display: block;
-      background:
-        linear-gradient(#e5e7eb 1px, transparent 1px),
-        linear-gradient(90deg, #e5e7eb 1px, transparent 1px);
-      background-size: 40px 40px;
-      background-position: center center;
-      border-radius: 16px;
-    }
-    .stats {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    .stat, .item, .preview-box {
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 12px;
-      background: white;
-    }
-    .stat .label {
-      color: var(--muted);
-      font-size: 13px;
-    }
-    .stat .value {
-      margin-top: 6px;
-      font-size: 18px;
-      font-weight: 700;
-    }
-    .list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      max-height: 380px;
-      overflow: auto;
-    }
-    .item {
-      font-size: 14px;
-      line-height: 1.55;
-    }
-    .item-top {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    .hint p {
-      margin: 0 0 8px 0;
-      line-height: 1.6;
-      color: #334155;
-      font-size: 14px;
-    }
-    .qr-grid {
-      display: grid;
-      grid-template-columns: 420px 1fr;
-      gap: 16px;
-    }
-    .row { margin-bottom: 14px; }
-    label {
-      display: block;
-      font-size: 14px;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-    .preview {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 420px;
-    }
-    .qr-box { text-align: center; }
-    #qrImage {
-      max-width: 100%;
-      height: auto;
-      border-radius: 12px;
-      background: #fff;
-    }
-    .payload {
-      margin-top: 12px;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 13px;
-      word-break: break-all;
-      color: #334155;
-      background: #f8fafc;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 10px;
-      text-align: left;
-    }
-    @media (max-width: 960px) {
-      .grid, .qr-grid { grid-template-columns: 1fr; }
-    }
+// v59 build marker
+// v58 build marker
+// v57 build marker
+// v56 build marker
+// v55 build marker
+// v54 build marker
+// v53 build marker
+// v52 build marker
+// v51 build marker
+// v50 build marker
+// v49 build marker
+// v48 build marker
+// v46 build marker
+// v44 build marker
+// v43 build marker
+// v41 build marker
+// v40 build marker
+// v39 build marker
+// v38 build marker
+// v37 build marker
+// v36 build marker
+// v35 build marker
+// v34 rebuild
+// v32 build marker
+// v31 build marker\n// v30 build marker
+// v29 build marker
+// v28 build marker
+// v27 build marker
+// v26 build marker
+// v25b build marker
+// v25 build marker
+// v24 build marker
+// v23 build marker
+// v22 build marker
+// v21 build marker
+// v20 build marker
+// v19 build marker
+// v17 build marker
+// v16 build marker
 
-    .map-wrap {
-      position: relative;
-      touch-action: none;
-      overflow: hidden;
-      min-height: 560px;
-    }
-    .map-wrap canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-      touch-action: none;
-    }
-    .map-overlay {
-      position: absolute;
-      z-index: 5;
-      pointer-events: none;
-    }
-    .compass {
-      right: 14px;
-      top: 14px;
-      width: 72px;
-      height: 72px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.92);
-      border: 1px solid var(--border);
-      box-shadow: 0 2px 10px rgba(15,23,42,.08);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 13px;
-      color: #334155;
-      font-weight: 700;
-    }
-    .compass-needle {
-      position: absolute;
-      width: 4px;
-      height: 24px;
-      border-radius: 999px;
-      background: #dc2626;
-      transform-origin: center 20px;
-      margin-top: -10px;
-    }
-    .zoom-chip {
-      left: 14px;
-      top: 14px;
-      background: rgba(255,255,255,.92);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 8px 12px;
-      font-size: 12px;
-      color: #334155;
-      font-weight: 600;
-      box-shadow: 0 2px 10px rgba(15,23,42,.08);
-    }
-    .map-action-btn {
-      pointer-events: auto;
-      border: 1px solid var(--border);
-      background: rgba(255,255,255,.95);
-      color: var(--text);
-      border-radius: 999px;
-      padding: 9px 12px;
-      font-size: 12px;
-      font-weight: 700;
-      box-shadow: 0 2px 10px rgba(15,23,42,.08);
-      cursor: pointer;
-    }
-    .map-action-btn:hover {
-      background: white;
-    }
-    .map-action-group {
-      right: 14px;
-      bottom: 14px;
-      display: flex;
-      gap: 8px;
-      pointer-events: auto;
-    }
-    .map-wrap.fullscreen-active,
-    .map-wrap:fullscreen,
-    .map-wrap:-webkit-full-screen {
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      background: #f8fafc;
-      border-radius: 0;
-      padding: 16px;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .map-wrap.fullscreen-active canvas,
-    .map-wrap:fullscreen canvas,
-    .map-wrap:-webkit-full-screen canvas {
-      width: 100%;
-      height: 100%;
-      margin: 0 auto;
-    }
-    .map-wrap.fullscreen-active .zoom-chip,
-    .map-wrap:fullscreen .zoom-chip,
-    .map-wrap:-webkit-full-screen .zoom-chip {
-      left: 20px;
-      top: 20px;
-    }
-    .map-wrap.fullscreen-active .compass,
-    .map-wrap:fullscreen .compass,
-    .map-wrap:-webkit-full-screen .compass {
-      right: 20px;
-      top: 20px;
-    }
-    .map-wrap.fullscreen-active .map-action-group,
-    .map-wrap:fullscreen .map-action-group,
-    .map-wrap:-webkit-full-screen .map-action-group {
-      right: 20px;
-      bottom: 20px;
-    }
-
-  
-    .nav-stats-bar{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:8px 12px;
-      align-items:center;
-      margin:10px 0 12px;
-      padding:12px 14px;
-      border:1px solid var(--border);
-      border-radius:16px;
-      background:rgba(255,255,255,0.92);
-      box-shadow:0 8px 18px rgba(15,23,42,0.06);
-      font-size:13px;
-      color:var(--text);
-    }
-    .nav-stat{display:flex;justify-content:space-between;gap:8px;min-width:0;}
-    .nav-stat-label{color:var(--muted);white-space:nowrap;}
-    .nav-stat-value{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .nav-coord-chip{
-      position:absolute;right:90px;bottom:20px;z-index:3;padding:7px 12px;border:1px solid var(--border);
-      border-radius:999px;background:rgba(255,255,255,0.92);color:#334155;font-size:12px;
-      box-shadow:0 6px 14px rgba(15,23,42,0.06);pointer-events:none;
-    }
-
-  
-    .smooth-control{
-      display:flex;
-      gap:6px;
-      align-items:center;
-      margin:8px 0 12px;
-      flex-wrap:wrap;
-    }
-    .smooth-control-label{
-      color:var(--muted);
-      font-size:13px;
-      margin-right:4px;
-    }
-    .smooth-chip{
-      border:1px solid var(--border);
-      background:#fff;
-      color:var(--text);
-      border-radius:999px;
-      padding:6px 12px;
-      font-size:12px;
-      cursor:pointer;
-    }
-    .smooth-chip.active{
-      background:var(--primary);
-      color:#fff;
-      border-color:var(--primary);
-    }
-
-  
-    .smooth-slider-wrap{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      margin:8px 0 12px;
-      padding:10px 12px;
-      border:1px solid var(--border);
-      border-radius:14px;
-      background:rgba(255,255,255,0.92);
-      box-shadow:0 6px 14px rgba(15,23,42,0.05);
-      flex-wrap:wrap;
-    }
-    .smooth-slider-label{
-      color:var(--muted);
-      font-size:13px;
-      white-space:nowrap;
-    }
-    .smooth-slider{
-      flex:1 1 180px;
-      min-width:180px;
-    }
-    .smooth-slider-value{
-      min-width:90px;
-      text-align:right;
-      font-size:12px;
-      font-weight:700;
-      color:var(--text);
-    }
-
-  
-    .map-action-group{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-      align-items:flex-end;
-      justify-content:center;
-      max-width:calc(100% - 24px);
-      left:50%;
-      transform:translateX(-50%);
-      right:auto !important;
-      bottom:14px;
-    }
-    .map-action-btn{
-      min-width:74px;
-      min-height:44px;
-      padding:10px 12px;
-      font-size:12px;
-      line-height:1.15;
-      white-space:normal;
-      text-align:center;
-      word-break:keep-all;
-      overflow-wrap:anywhere;
-      box-shadow:0 6px 14px rgba(15,23,42,0.08);
-    }
-    .compass{
-      z-index:2;
-    }
-    .nav-coord-chip{
-      right:14px;
-      bottom:74px;
-      max-width:150px;
-      text-align:center;
-    }
-
-  
-    .map-wrap{
-      padding-bottom:96px !important;
-    }
-    .map-action-group{
-      display:grid !important;
-      grid-template-columns:repeat(4, minmax(64px, 1fr));
-      gap:8px;
-      align-items:end;
-      justify-content:center;
-      width:calc(100% - 28px);
-      max-width:420px;
-      left:50%;
-      transform:translateX(-50%);
-      right:auto !important;
-      bottom:12px;
-    }
-    .map-action-btn{
-      min-width:0;
-      min-height:42px;
-      padding:8px 6px;
-      font-size:12px;
-      line-height:1.1;
-      white-space:normal;
-      text-align:center;
-      box-shadow:0 6px 14px rgba(15,23,42,0.08);
-    }
-    .nav-coord-chip{
-      right:14px;
-      bottom:112px;
-      max-width:160px;
-      text-align:center;
-    }
-
-  
-    .map-wrap{
-      position:relative;
-      padding-bottom:110px !important;
-      overflow:hidden;
-    }
-    .map-action-group{
-      position:absolute !important;
-      left:12px !important;
-      right:12px !important;
-      bottom:12px !important;
-      transform:none !important;
-      width:auto !important;
-      max-width:none !important;
-      display:grid !important;
-      grid-template-columns:repeat(4, minmax(0, 1fr)) !important;
-      gap:8px !important;
-      z-index:5 !important;
-      pointer-events:auto !important;
-    }
-    .map-action-btn{
-      min-width:0 !important;
-      min-height:42px !important;
-      padding:8px 6px !important;
-      font-size:12px !important;
-      line-height:1.1 !important;
-      white-space:normal !important;
-      text-align:center !important;
-      word-break:keep-all !important;
-      overflow-wrap:anywhere !important;
-      border-radius:999px !important;
-      box-shadow:0 6px 14px rgba(15,23,42,0.08) !important;
-    }
-    .nav-coord-chip{
-      right:14px !important;
-      bottom:116px !important;
-      z-index:4 !important;
-    }
-
-  
-    .map-toolbar-row{
-      display:grid;
-      grid-template-columns:repeat(4, minmax(0, 1fr));
-      gap:8px;
-      margin-top:10px;
-    }
-    .map-toolbar-row .map-action-btn{
-      min-width:0 !important;
-      min-height:42px !important;
-      padding:8px 6px !important;
-      font-size:12px !important;
-      line-height:1.1 !important;
-      white-space:normal !important;
-      text-align:center !important;
-      border-radius:999px !important;
-      box-shadow:0 6px 14px rgba(15,23,42,0.08) !important;
-    }
-    .map-wrap{
-      padding-bottom:10px !important;
-    }
-
-  
-    .map-wrap{
-      display:flex;
-      flex-direction:column;
-      height:100%;
-      min-height:520px;
-    }
-    #trackCanvas{
-      flex:1 1 auto;
-    }
-    .map-toolbar-row{
-      margin-top:6px;
-    }
-
-  
-    .import-json-trigger{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-height:44px;
-      padding:10px 16px;
-      border-radius:999px;
-      border:1px solid var(--border);
-      background:#eef2ff;
-      color:var(--text);
-      font-weight:700;
-      cursor:pointer;
-      box-shadow:0 2px 10px rgba(15,23,42,.08);
-      text-decoration:none;
-      user-select:none;
-      -webkit-user-select:none;
-    }
-
-  </style>
-</head>
-<body>
-  <div class="topbar">
-    <div class="topbar-inner">
-      <strong>室內導航工具箱</strong>
-      <div class="navtabs">
-        <button class="tabbtn active" data-page="navPage">導航</button>
-        <button class="tabbtn" data-page="qrPage">QR 產生器</button>
-        <button class="tabbtn" data-page="mapEditorPage">地圖編輯</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="wrap">
-    <div id="navPage" class="page active">
-      <div class="grid">
-        <section class="card">
-          <div class="card-header">
-            <h2>室內軌跡校正 Prototype</h2>
-            <div class="badges">
-              <span class="badge" id="permissionBadge">idle</span>
-              <span class="badge" id="gpsBadge">無GPS</span>
-              <span class="badge" id="trackBadge">idle</span>
-            </div>
-          </div>
-          <div class="card-content">
-            <div class="alert" id="messageBox">先授權感測器與定位，再開始追蹤。</div>
-
-            <div class="alert" id="guidanceBanner" style="background:#fff7ed; border-color:#fed7aa;">尚未開始導航。</div>
-
-            <div class="btn-row">
-              <button class="primary" id="btnPermission">授權感測器與定位</button>
-              <button id="btnAnchor">以目前 GPS 設起點</button>
-              <button id="btnSetManualHeading">修改方向</button>
-              <button id="btnStart">開始追蹤</button>
-              <button id="btnStop">停止追蹤</button>
-              <button class="secondary" id="btnExport">匯出 JSON</button>
-              <label class="secondary import-json-trigger" id="btnImportJson" for="importJsonFile" tabindex="0">匯入 JSON</label>
-              <input id="importJsonFile" type="file" accept="application/json,.json" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" />
-              
-              
-              <button class="secondary" id="btnStepCal">10 步步長校正</button>
-              <button class="secondary" id="btnQrCal">QR 校正點</button>
-              <a class="download-link" id="downloadLink" style="display:none;">下載匯出檔</a>
-              <button class="danger" id="btnReset">清空資料</button>
-            </div>
-
-            <div class="slider-box">
-              <div class="slider-row">
-                <span>步長設定</span>
-                <span id="stepLengthValue">0.72 m</span>
-              </div>
-              <input type="range" id="stepLength" min="0.4" max="1.0" step="0.01" value="0.72" />
-              <div class="subtle">先用手動步長校正，之後可改成依步頻或身高自動估計。</div>
-              <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                <label style="display:flex; align-items:center; gap:8px; margin:0; color:#334155;">
-                  <input id="toggleAnchorOverlay" type="checkbox" checked />
-                  顯示已儲存校正點
-                </label>
-                <label style="display:flex; align-items:center; gap:8px; margin:0; color:#334155;">
-                  <input id="toggleMapOverlay" type="checkbox" checked />
-                  顯示地圖圖層
-                </label>
-                <span class="subtle" style="margin:0;">會把 QR 產生器裡存過的校正點與地圖編輯模式建立的元素畫在導航畫布上。</span>
-              </div>
-            </div>
-
-            <div class="big-actions">
-              <button id="btnPosCorrection">按鈕 1：位置校正</button>
-              <button class="secondary" id="btnHeadingCorrection">按鈕 2：方向校正</button>
-            </div>
-
-            
-          
-          <div class="smooth-slider-wrap" id="smoothControl">
-            <span class="smooth-slider-label">平滑強度</span>
-            <input id="smoothStrengthSlider" class="smooth-slider" type="range" min="0.05" max="0.50" step="0.01" value="0.22" />
-            <span class="smooth-slider-value" id="smoothStrengthValue">標準 (0.22)</span>
-          </div>
-
-          <div class="nav-stats-bar" id="navStatsBar">
-            <div class="nav-stat"><span class="nav-stat-label">距離起點</span><span class="nav-stat-value" id="navStatStartDistance">0 m</span></div>
-            <div class="nav-stat"><span class="nav-stat-label">目前速度</span><span class="nav-stat-value" id="navStatSpeed">0.00 m/s</span></div>
-            <div class="nav-stat"><span class="nav-stat-label">方向</span><span class="nav-stat-value" id="navStatHeading">北 (0°)</span></div>
-            <div class="nav-stat"><span class="nav-stat-label">平均速度</span><span class="nav-stat-value" id="navStatAvgSpeed">0.00 m/s</span></div>
-            <div class="nav-stat"><span class="nav-stat-label">移動距離</span><span class="nav-stat-value" id="navStatTotalDistance">0 m</span></div>
-            <div class="nav-stat"><span class="nav-stat-label">目前座標</span><span class="nav-stat-value" id="navStatCoords">(0 m, 0 m)</span></div>
-          </div>
-
-          <div class="map-wrap" id="trackCanvasWrap">
-              <div class="map-overlay compass" id="navCompass"><div class="compass-needle" id="navCompassNeedle"></div><span>N</span></div>
-              <div class="map-overlay zoom-chip" id="navZoomChip">100%</div>
-              <canvas id="trackCanvas" width="560" height="560"></canvas>
-            <div class="nav-coord-chip" id="navCoordChip">(0 m, 0 m)</div>
-            </div>
-            <div class="subtle" style="margin-top:10px;">紅色虛線為目前導航段，橘色虛線為後續段，藍點為已儲存校正點，紫線/綠點/黃區為地圖編輯圖層。</div>
-          </div>
-        </section>
-
-        <div>
-          <section class="card" style="margin-bottom:16px;">
-            <div class="card-header"><h3>即時狀態</h3></div>
-            <div class="card-content">
-              <div class="stats">
-                <div class="stat"><div class="label">估計位置</div><div class="value" id="poseValue">x 0.00 / y 0.00</div></div>
-                <div class="stat"><div class="label">估計方向</div><div class="value" id="headingValue">0.0°</div></div>
-                <div class="stat"><div class="label">GPS accuracy</div><div class="value" id="gpsAccValue">-</div><div class="subtle">校正門檻：20 m</div></div>
-                <div class="stat"><div class="label">步數</div><div class="value" id="stepCountValue">0</div></div>
-                <div class="stat"><div class="label">加速度</div><div class="value" id="accValue">0, 0, 0</div></div>
-                <div class="stat"><div class="label">步態訊號</div><div class="value" id="motionValue">raw 0 / smooth 0</div></div>
-                <div class="stat"><div class="label">上次步伐</div><div class="value" id="lastStepValue">-</div></div>
-                <div class="stat"><div class="label">地理座標</div><div class="value" id="geoValue">-</div></div>
-              </div>
-            </div>
-          </section>
-
-
-          <section class="card" style="margin-bottom:16px;">
-            <div class="card-header"><h3>箭頭導引</h3></div>
-            <div class="card-content">
-              <div style="display:flex; align-items:center; justify-content:center; padding:10px 0 18px 0;">
-                <div id="arrowDial" style="width:220px; height:220px; border:1px solid var(--border); border-radius:999px; position:relative; background:linear-gradient(180deg,#fff,#f8fafc);">
-                  <div style="position:absolute; inset:12px; border:1px dashed #cbd5e1; border-radius:999px;"></div>
-                  <div style="position:absolute; left:50%; top:14px; transform:translateX(-50%); font-size:12px; color:#64748b;">前方</div>
-                  <div id="arrowNeedle" style="position:absolute; left:50%; top:50%; width:8px; height:88px; background:#dc2626; transform-origin:center 70px; transform:translate(-50%,-70px) rotate(0deg); border-radius:999px; box-shadow:0 2px 8px rgba(220,38,38,.25);"></div>
-                  <div style="position:absolute; left:50%; top:50%; width:18px; height:18px; background:#0f172a; border-radius:999px; transform:translate(-50%,-50%);"></div>
-                </div>
-              </div>
-              <div class="stats">
-                <div class="stat"><div class="label">下一步方向</div><div class="value" id="turnArrowText">尚未設定</div></div>
-                <div class="stat"><div class="label">剩餘距離</div><div class="value" id="turnDistanceText">-</div></div>
-                <div class="stat"><div class="label">相對轉角</div><div class="value" id="turnAngleText">-</div></div>
-                <div class="stat"><div class="label">下一個點</div><div class="value" id="turnTargetText">-</div></div>
-              </div>
-            </div>
-          </section>
-
-
-          <section class="card" style="margin-bottom:16px;">
-            <div class="card-header"><h3>路徑進度</h3></div>
-            <div class="card-content">
-              <div style="margin-bottom:12px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; font-size:14px; color:#64748b; margin-bottom:8px;">
-                  <span id="routeProgressLabel">尚未開始</span>
-                  <span id="routeProgressPercent">0%</span>
-                </div>
-                <div style="width:100%; height:14px; border-radius:999px; background:#e2e8f0; overflow:hidden;">
-                  <div id="routeProgressBar" style="width:0%; height:100%; background:linear-gradient(90deg,#fb923c,#ef4444); border-radius:999px;"></div>
-                </div>
-              </div>
-              <div class="stats">
-                <div class="stat"><div class="label">已走距離</div><div class="value" id="routeTraveledText">-</div></div>
-                <div class="stat"><div class="label">剩餘距離</div><div class="value" id="routeRemainingText">-</div></div>
-                <div class="stat"><div class="label">總距離</div><div class="value" id="routeTotalText">-</div></div>
-                <div class="stat"><div class="label">ETA 預估</div><div class="value" id="routeEtaText">-</div></div>
-              </div>
-            </div>
-          </section>
-
-
-          <section class="card" style="margin-bottom:16px;">
-            <div class="card-header"><h3>導航歷史</h3></div>
-            <div class="card-content">
-              <div class="subtle" style="margin-top:0; margin-bottom:10px;">每次開始到結束的一段導航都會記錄在這裡，存在目前瀏覽器。</div>
-              <div class="btns" style="margin-bottom:10px;">
-                <button id="btnExportNavHistory">匯出歷史</button>
-                <button id="btnClearNavHistory" class="danger">清空歷史</button>
-              </div>
-              <div id="navHistoryList" class="list" style="max-height:280px;">
-                <div class="item" style="${m.id === state.selectedMapElementId ? 'border-color:#ef4444; box-shadow:0 0 0 1px rgba(239,68,68,.2) inset;' : ''}">尚無導航歷史。</div>
-              </div>
-            </div>
-          </section>
-
-          <section class="card" style="margin-bottom:16px;">
-            <div class="card-header"><h3>校正紀錄</h3></div>
-            <div class="card-content">
-              <div class="list" id="correctionList">
-                <div class="item">尚未進行校正。建議先在入口設定起點，追蹤後到窗邊做位置校正，再做方向校正。</div>
-              </div>
-            </div>
-          </section>
-
-
-          <section class="card" style="margin-bottom:16px;">
-            <div class="card-header"><h3>目標導引</h3></div>
-            <div class="card-content">
-              <div class="row">
-                <label for="navTargetSelect">選擇目標校正點</label>
-                <select id="navTargetSelect" style="width:100%; border:1px solid var(--border); border-radius:14px; padding:10px 12px; font-size:15px; background:white;">
-                  <option value="">請先選擇目標</option>
-                </select>
-              </div>
-              <div class="btns" style="margin-bottom:10px;">
-                <button id="btnSetTarget">設為導航目標</button>
-                <button id="btnClearTarget" class="secondary">清除目標</button>
-              </div>
-              <div class="row">
-                <label for="routeModeSelect">路徑模式</label>
-                <select id="routeModeSelect" style="width:100%; border:1px solid var(--border); border-radius:14px; padding:10px 12px; font-size:15px; background:white;">
-                  <option value="direct">直接連線</option>
-                  <option value="multi">多段路徑</option>
-                  <option value="network">沿線段自動找路</option>
-                </select>
-              </div>
-              <div class="row">
-                <label for="routeWaypointsSelect">中繼校正點（多選）</label>
-                <select id="routeWaypointsSelect" multiple size="6" style="width:100%; border:1px solid var(--border); border-radius:14px; padding:10px 12px; font-size:15px; background:white;"></select>
-                <div class="subtle">按住 Ctrl / Command 可多選。手機上可先不選，之後用快速按鈕加入。若選「沿線段自動找路」，系統會優先沿地圖編輯裡的線段規劃。</div>
-              </div>
-              <div class="btns" style="margin-bottom:10px;">
-                <button id="btnApplyRoute" class="secondary">套用多段路徑</button>
-                <button id="btnClearRoute" class="secondary">清空中繼點</button>
-              </div>
-              <div class="row">
-                <label for="arrivalThresholdInput">到點提示門檻（公尺）</label>
-                <input id="arrivalThresholdInput" type="number" step="0.1" min="0.5" max="10" value="2.0" style="width:100%; border:1px solid var(--border); border-radius:14px; padding:10px 12px; font-size:15px; background:white;" />
-              </div>
-              <div style="margin-top:10px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                <label style="display:flex; align-items:center; gap:8px; margin:0; color:#334155;">
-                  <input id="toggleVoiceGuide" type="checkbox" checked />
-                  啟用語音提示
-                </label>
-                <span class="subtle" style="margin:0;">使用瀏覽器語音播報到點與轉向提醒。</span>
-              </div>
-              <div class="subtle" id="targetSummary" style="margin-top:10px;">尚未設定導航目標。</div>
-              <div class="btns" style="margin-top:10px; margin-bottom:0;">
-                <button id="btnNavSessionStart" class="primary">開始導航</button>
-                <button id="btnNavSessionPause" class="secondary">暫停導航</button>
-                <button id="btnNavSessionResume" class="secondary">繼續導航</button>
-                <button id="btnNavSessionEnd" class="danger">結束導航</button>
-              </div>
-            </div>
-          </section>
-
-          <section class="card">
-            <div class="card-header"><h3>操作順序</h3></div>
-            <div class="card-content hint">
-              <p>1. 先授權感測器與定位。</p>
-              <p>2. 到窗邊按「以目前 GPS 設起點」。</p>
-              <p>3. 按「開始追蹤」後再走動。</p>
-              <p>4. 訊號好時做位置校正，固定手機做方向校正。</p>
-              <p>5. 也可以切到上方「QR 產生器」頁做 QR 校正點。</p>
-            </div>
-          </section>
-        </div>
-      </div>
-    </div>
-
-    <div id="qrPage" class="page">
-      <div class="qr-grid">
-        <section class="card">
-          <div class="card-header"><h2>QR 校正點產生器</h2></div>
-          <div class="card-content">
-            <div class="row">
-              <label for="anchorName">校正點名稱</label>
-              <input id="anchorName" placeholder="例如：入口 A、電梯口、會議室外" />
-            </div>
-
-            <div class="row">
-              <label for="xValue">X 座標（公尺）</label>
-              <input id="xValue" type="number" step="0.1" value="0" />
-            </div>
-
-            <div class="row">
-              <label for="yValue">Y 座標（公尺）</label>
-              <input id="yValue" type="number" step="0.1" value="0" />
-            </div>
-
-            <div class="row">
-              <label for="headingValueInput">方向 heading（0~359，可留空）</label>
-              <input id="headingValueInput" type="number" step="1" placeholder="例如 0 / 90 / 180 / 270" />
-            </div>
-
-            <div class="row">
-              <label for="payloadText">QR 內容</label>
-              <textarea id="payloadText" readonly></textarea>
-            </div>
-
-            <div class="btns">
-              <button class="primary" id="btnGenerate">產生 QR</button>
-              <button id="btnUseCurrentPoseForQr" type="button">用目前位置</button>
-              <button id="btnCopy">複製內容</button>
-              <a class="btn" id="btnDownloadQr" download="indoor-anchor-qr.png">下載 QR 圖片</a>
-            </div>
-
-            <div class="subtle">
-              建議實際貼在現場時，同時把名稱與座標印在紙上，例如：<br />
-              入口 A / x=0 / y=0 / heading=0
-            </div>
-
-            <div class="formbox" style="margin-top:14px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
-                <strong>本地校正點清單</strong>
-                <div class="btns" style="margin:0;">
-                  <button id="btnSaveAnchor">儲存目前校正點</button>
-                  <button id="btnSyncAnchorsToMap">同步全部到地圖</button>
-                  <button id="btnExportAnchors">匯出清單</button>
-                  <button id="btnImportAnchors">匯入清單</button>
-                  <input id="importAnchorsFile" type="file" accept="application/json" style="display:none;" />
-                  <button id="btnClearAnchors" class="danger">清空清單</button>
-                </div>
-              </div>
-              <div class="subtle" style="margin-top:0; margin-bottom:10px;">會存在你目前這台裝置的瀏覽器 localStorage。重新開網站還會在，也可同步回地圖編輯模式。</div>
-              <div id="anchorList" class="list" style="max-height:260px;">
-                <div class="item">尚未儲存任何校正點。</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="card-header"><h2>預覽</h2></div>
-          <div class="card-content">
-            <div class="preview">
-              <div class="qr-box">
-                <img id="qrImage" alt="QR code 預覽" />
-                <div id="anchorTitle" style="margin-top:12px; font-weight:700;">尚未產生</div>
-                <div class="payload" id="payloadPreview">INDOOR_ANCHOR:0,0,0</div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-    </div>
-
-    <div id="mapEditorPage" class="page">
-      <div class="grid">
-        <section class="card">
-          <div class="card-header">
-            <h2>地圖編輯模式</h2>
-            <div class="badges">
-              <span class="badge" id="editorModeBadge">idle</span>
-            </div>
-          </div>
-          <div class="card-content">
-            <div class="alert" id="editorMessageBox">先選編輯模式，再點擊畫布建立地圖元素。</div>
-
-            <div class="btn-row">
-              <button id="btnEditorIdle">瀏覽模式</button>
-              <button id="btnEditorPoint" class="secondary">新增點位</button>
-              <button id="btnEditorLine" class="secondary">新增線段</button>
-              <button id="btnEditorArea" class="secondary">新增區域</button>
-              <button id="btnEditorUndo" class="secondary">上一步</button>
-              <button id="btnEditorNormalize" class="secondary">修正路網</button>
-              <button id="btnEditorClear" class="danger">清空地圖元素</button>
-            </div>
-
-            <div class="slider-box">
-              <div class="slider-row">
-                <span>編輯用名稱</span>
-                <span id="editorDraftInfo">未命名</span>
-              </div>
-              <input id="editorNameInput" type="text" placeholder="例如：走廊 A、入口大廳、會議室區" />
-              <div style="margin-top:10px;" class="row">
-                <label for="editorElementSemantic">元素語義</label>
-                <select id="editorElementSemantic" style="width:100%; border:1px solid var(--border); border-radius:14px; padding:10px 12px; font-size:15px; background:white;">
-                  <option value="walkable">可通行</option>
-                  <option value="wall">牆 / 障礙</option>
-                  <option value="restricted">限制區域</option>
-                  <option value="landmark">地標</option>
-                </select>
-              </div>
-              <div class="subtle">新增點位時會以這個名稱建立標記。新增線段/區域時會以這個名稱記錄元素，並附帶可通行/牆/限制區域等語義。</div>
-              <div style="margin-top:10px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-                <label style="display:flex; align-items:center; gap:8px; margin:0; color:#334155;">
-                  <input id="toggleSnapMode" type="checkbox" checked />
-                  啟用端點吸附
-                </label>
-                <label style="display:flex; align-items:center; gap:8px; margin:0; color:#334155;">
-                  <input id="toggleAutoIntersect" type="checkbox" checked />
-                  啟用交點節點化
-                </label>
-              </div>
-              <div class="subtle">線段端點會自動吸附到附近現有端點。若兩條線相交，會自動建立交點節點供路網使用。牆與限制區域會影響路徑規劃。</div>
-            </div>
-
-            <div class="map-wrap" id="editorCanvasWrap">
-              <div class="map-overlay compass" id="editorCompass"><div class="compass-needle" id="editorCompassNeedle"></div><span>N</span></div>
-              <div class="map-overlay zoom-chip" id="editorZoomChip">100%</div>
-              <canvas id="editorCanvas" width="560" height="560"></canvas>
-            </div>
-            <div class="subtle" style="margin-top:10px;">
-              點位會存在本機瀏覽器。你可以用它建立走廊線、區域框、入口點，之後再搭配 QR 校正點與導航頁使用。
-            </div>
-          </div>
-        </section>
-
-        <div>
-          <section class="card" style="margin-bottom:16px;">
-            <div class="card-header"><h3>地圖元素清單</h3></div>
-            <div class="card-content">
-              <div class="btns" style="margin-bottom:10px;">
-                <button id="btnExportMapData">匯出地圖 JSON</button>
-                <button id="btnImportMapData">匯入地圖 JSON</button>
-                <input id="importMapDataFile" type="file" accept="application/json" style="display:none;" />
-              </div>
-              <div class="formbox" style="margin-bottom:10px;">
-                <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px;">
-                  <strong>已選元素編輯</strong>
-                  <span class="badge" id="selectedMapElementType">none</span>
-                </div>
-                <div class="row">
-                  <label for="selectedMapElementName">名稱</label>
-                  <input id="selectedMapElementName" type="text" placeholder="請先從清單選一個元素" />
-                </div>
-                <div class="row">
-                  <label for="selectedMapElementSemantic">元素語義</label>
-                  <select id="selectedMapElementSemantic" style="width:100%; border:1px solid var(--border); border-radius:14px; padding:10px 12px; font-size:15px; background:white;">
-                    <option value="walkable">可通行</option>
-                    <option value="wall">牆 / 障礙</option>
-                    <option value="restricted">限制區域</option>
-                    <option value="landmark">地標</option>
-                  </select>
-                </div>
-                <div class="btns" style="margin-bottom:0;">
-                  <button id="btnUpdateSelectedMapElement">更新名稱</button>
-                  <button id="btnConvertSelectedToAnchor" class="secondary">轉成 Anchor</button>
-                  <button id="btnDeleteSelectedMapElement" class="danger">刪除所選元素</button>
-                </div>
-              </div>
-              <div id="mapElementList" class="list" style="max-height:460px;">
-                <div class="item">尚未建立任何地圖元素。</div>
-              </div>
-            </div>
-          </section>
-
-          <section class="card">
-            <div class="card-header"><h3>編輯說明</h3></div>
-            <div class="card-content hint">
-              <p>1. 點位模式：點一下畫布就建立一個點。</p>
-              <p>2. 線段模式：依序點兩個位置，建立一條走廊或牆線。</p>
-              <p>3. 區域模式：依序點四個角點，建立矩形區域。</p>
-              <p>4. 先做草圖級地圖，再慢慢補室內結構。</p>
-              <p>5. 點位元素可一鍵轉成 Anchor，直接進到 QR 與導航流程。</p>
-              <p>6. 線段元素可作為路網，讓導航頁沿地圖線段自動找路。</p>
-              <p>7. 啟用吸附與交點節點化後，路網會更容易連通，找路更穩。</p>
-              <p>8. 把線段或區域標成牆 / 限制區域後，路徑規劃會盡量避開。</p>
-            </div>
-          </section>
-        </div>
-      </div>
-    </div>
-
-
-  <div id="qrModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:50; align-items:center; justify-content:center;">
-    <div style="background:#fff; width:min(92vw,520px); border-radius:16px; padding:14px; border:1px solid #dbe3ee;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-        <strong>掃描 QR 校正點</strong>
-        <button id="btnQrClose" style="border:1px solid #dbe3ee; border-radius:12px; padding:6px 10px; background:#fff;">關閉</button>
-      </div>
-      <video id="qrVideo" playsinline style="width:100%; border-radius:12px; background:#000;"></video>
-      <div style="font-size:12px; color:#64748b; margin-top:8px;">QR 內容格式：INDOOR_ANCHOR:x,y,heading（例如 INDOOR_ANCHOR:12.4,-3.2,90）</div>
-    </div>
-  </div>
-
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-<script>
 (() => {
   const SAMPLE_MS = 250;
   const POSITION_SAMPLE_SECONDS = 6;
@@ -1162,7 +52,7 @@
   const CENTER = TRACK_SIZE / 2;
   const DEFAULT_CANVAS_SCALE = 1;
   const DEFAULT_VIEW_SCALE = 1;
-  const MIN_VIEW_SCALE = 0.01; // v16
+  const MIN_VIEW_SCALE = 0.01; // v17 // v16
   const MAX_VIEW_SCALE = 4.8;
   const DEFAULT_WORLD_SCALE = 8;
 
@@ -1196,6 +86,12 @@
     qrScanMode: false,
     qrStream: null,
     savedAnchors: [],
+    navTrackPoints: [],
+    selectedNavTrackPointId: "",
+    highlightAnchorId: "",
+    lastPoseAnchorCreateAt: 0,
+    lastNavCanvasDragAt: 0,
+    lastNavCanvasTapAt: 0,
     showAnchorOverlay: true,
     navTargetId: "",
     routeMode: "direct",
@@ -1378,7 +274,9 @@
     const pose = latestPose();
     addPoint(pose.x, pose.y);
     state.savedAnchors.forEach((a) => addPoint(a.x, a.y));
+    state.navTrackPoints.forEach((p) => addPoint(p.x, p.y));
     state.plannedRoutePoints.forEach((p) => addPoint(p.x, p.y));
+    state.importedTracks.forEach((track) => track.points.forEach((p) => addPoint(p.x, p.y)));
     (state.importedTracks || []).forEach((track) => track.points.forEach((p) => addPoint(p.x, p.y)));
     state.mapElements.forEach((el) => {
       if (el.type === "point") {
@@ -1527,7 +425,8 @@
         startX: evt.clientX,
         startY: evt.clientY,
         startPanX: viewport.panX,
-        startPanY: viewport.panY
+        startPanY: viewport.panY,
+        moved: false
       };
       if (type === "nav") navCanvasGesture = gesture;
       else editorCanvasGesture = gesture;
@@ -1536,8 +435,14 @@
     wrapEl.addEventListener("pointermove", (evt) => {
       const gesture = type === "nav" ? navCanvasGesture : editorCanvasGesture;
       if (!gesture || gesture.pointerId !== evt.pointerId) return;
-      viewport.panX = gesture.startPanX + (evt.clientX - gesture.startX);
-      viewport.panY = gesture.startPanY + (evt.clientY - gesture.startY);
+      const dx = evt.clientX - gesture.startX;
+      const dy = evt.clientY - gesture.startY;
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+        gesture.moved = true;
+        if (type === "nav") state.lastNavCanvasDragAt = Date.now();
+      }
+      viewport.panX = gesture.startPanX + dx;
+      viewport.panY = gesture.startPanY + dy;
       clampViewport(viewport);
       markViewportManual(viewport);
       refreshViewportUI();
@@ -1594,10 +499,8 @@
       extra.className = "btns";
       extra.style.marginTop = "10px";
       extra.innerHTML = `
-        <button id="btnGpsAnchorCreate" class="secondary">以 GPS 新增標定點</button>
-        <button id="btnPoseAnchorCreate" class="secondary">以目前位置新增標定點</button>
-        <button id="btnAnchorCorrection" class="secondary">以標定點校正目前位置</button>
-        <button id="btnGpsFusionCorrection" class="secondary">以 GPS 柔性校正</button>
+        <button id="btnAnchorCorrection" class="secondary" type="button">以標定點校正目前位置</button>
+        <button id="btnGpsFusionCorrection" class="secondary" type="button">以 GPS 柔性校正</button>
       `;
       navBtnRow.parentNode.insertBefore(extra, navBtnRow.nextSibling);
     }
@@ -1788,14 +691,14 @@
         x: Number(meters.x.toFixed(2)),
         y: Number(meters.y.toFixed(2)),
         heading,
-        source: "gps",
+        source: "gps-fixed",
         gps: { lat: sample.lat, lng: sample.lng, accuracy: sample.accuracy },
         payload: `INDOOR_ANCHOR:${Number(meters.x.toFixed(2))},${Number(meters.y.toFixed(2))},${heading}`,
         createdAt: new Date().toISOString()
       };
       state.savedAnchors.unshift(anchor);
       persistSavedAnchors();
-      setMessage(`已建立 GPS 標定點：${anchor.name}。`);
+      setMessage(`已建立 GPS 固定標定點：${anchor.name}。`);
       render();
     } catch (e) {
       setMessage("GPS 標定點建立失敗：" + e.message);
@@ -1884,6 +787,40 @@ function fmt(n, d = 2) {
     return Number.isFinite(n) ? n.toFixed(d) : "-";
   }
 
+  function normalizeSavedAnchorRecord(a, idx = 0) {
+    const x = Number(a?.x ?? 0);
+    const y = Number(a?.y ?? 0);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    const heading = a?.heading == null || a.heading === "" ? null : Number(a.heading);
+    const source = a?.source || (a?.gps ? "gps-fixed" : "manual");
+    return {
+      id: a?.id || ((crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now() + idx)),
+      name: a?.name || `校正點 ${idx + 1}`,
+      x,
+      y,
+      heading: Number.isFinite(heading) ? heading : null,
+      source,
+      gps: a?.gps ? { lat: Number(a.gps.lat), lng: Number(a.gps.lng), accuracy: Number(a.gps.accuracy) } : null,
+      payload: a?.payload || `INDOOR_ANCHOR:${x}${Number.isFinite(y) ? ',' + y : ',0'}${Number.isFinite(heading) ? ',' + heading : ''}`,
+      createdAt: a?.createdAt || new Date().toISOString()
+    };
+  }
+
+  function anchorDisplayColor(anchor) {
+    if (!anchor) return '#2563eb';
+    if (anchor.source === 'current-pose') return '#d946ef';
+    if (anchor.source === 'gps' || anchor.source === 'gps-fixed') return '#2563eb';
+    if (anchor.source === 'map-point') return '#0ea5e9';
+    return '#2563eb';
+  }
+
+  function anchorLabelColor(anchor) {
+    if (!anchor) return '#1e3a8a';
+    if (anchor.source === 'current-pose') return '#a21caf';
+    if (anchor.source === 'map-point') return '#0369a1';
+    return '#1e3a8a';
+  }
+
   function normalizeAngle(deg) {
     let a = deg % 360;
     if (a < 0) a += 360;
@@ -1956,6 +893,138 @@ function fmt(n, d = 2) {
     if (acc <= 10) return "GPS佳";
     if (acc <= 25) return "GPS可用";
     return "GPS偏弱";
+  }
+
+
+  function loadNavTrackPoints() {
+    try {
+      const raw = localStorage.getItem("indoor_nav_track_points");
+      const parsed = raw ? JSON.parse(raw) : [];
+      state.navTrackPoints = Array.isArray(parsed) ? parsed.map((p, idx) => normalizeNavTrackPoint(p, idx)).filter(Boolean) : [];
+    } catch (e) {
+      state.navTrackPoints = [];
+    }
+  }
+
+  function persistNavTrackPoints() {
+    localStorage.setItem("indoor_nav_track_points", JSON.stringify(state.navTrackPoints));
+  }
+
+  function normalizeNavTrackPoint(p, idx = 0) {
+    const x = Number(p?.x ?? 0);
+    const y = Number(p?.y ?? 0);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    return {
+      id: p?.id || ((crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now() + idx)),
+      name: p?.name || `軌跡點 ${idx + 1}`,
+      x: Number(x.toFixed(2)),
+      y: Number(y.toFixed(2)),
+      createdAt: p?.createdAt || new Date().toISOString()
+    };
+  }
+
+  function navCanvasWorldFromEvent(evt) {
+    const wrap = $("trackCanvasWrap");
+    const canvas = $("trackCanvas");
+    if (!wrap || !canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const local = {
+      x: evt.clientX - rect.left,
+      y: evt.clientY - rect.top
+    };
+    return viewportScreenToWorld(local, state.navViewport, wrap);
+  }
+
+  function findNavTrackPointNear(world, toleranceMeters = 1.2) {
+    let best = null;
+    let bestDist = Infinity;
+    state.navTrackPoints.forEach((p) => {
+      const d = distanceBetween(world, p);
+      if (d <= toleranceMeters && d < bestDist) {
+        best = p;
+        bestDist = d;
+      }
+    });
+    return best;
+  }
+
+  function cumulativeTrailDistances() {
+    const out = [0];
+    for (let i = 1; i < state.trail.length; i++) {
+      out[i] = out[i - 1] + distanceBetween(state.trail[i - 1], state.trail[i]);
+    }
+    return out;
+  }
+
+  function trajectoryDistanceFromStartToPoint(point) {
+    if (!point || !state.trail.length) return 0;
+    const cum = cumulativeTrailDistances();
+    let bestIdx = 0;
+    let bestDist = Infinity;
+    state.trail.forEach((p, idx) => {
+      const d = distanceBetween(point, p);
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = idx;
+      }
+    });
+    return cum[bestIdx] || 0;
+  }
+
+  function showNavTrackPointInfo(point) {
+    if (!point) return;
+    const trajDist = trajectoryDistanceFromStartToPoint(point);
+    state.selectedNavTrackPointId = point.id;
+    setMessage(`軌跡點「${point.name}」：座標 (${fmt(point.x, 2)}, ${fmt(point.y, 2)}) m，距起點軌跡距離 ${fmt(trajDist, 1)} m。起點座標為 (0,0) m。`);
+    render();
+  }
+
+  function addNavTrackPointAt(world) {
+    const defaultName = `軌跡點 ${state.navTrackPoints.length + 1}`;
+    const promptValue = window.prompt("請輸入軌跡點名稱", defaultName);
+    const name = (promptValue || "").trim();
+    if (!name) {
+      setMessage("已取消新增軌跡點。");
+      return;
+    }
+    const point = {
+      id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()),
+      name,
+      x: Number(Number(world.x || 0).toFixed(2)),
+      y: Number(Number(world.y || 0).toFixed(2)),
+      createdAt: new Date().toISOString()
+    };
+    state.navTrackPoints.unshift(point);
+    state.selectedNavTrackPointId = point.id;
+    persistNavTrackPoints();
+    if (state.navAutoFit) ensureNavViewportVisible(true);
+    const trajDist = trajectoryDistanceFromStartToPoint(point);
+    setMessage(`已新增軌跡點「${point.name}」：座標 (${fmt(point.x, 2)}, ${fmt(point.y, 2)}) m，距起點軌跡距離 ${fmt(trajDist, 1)} m。`);
+    render();
+  }
+
+  function handleNavCanvasClick(evt) {
+    if (Date.now() - (state.lastNavCanvasDragAt || 0) < 250) return;
+    const world = navCanvasWorldFromEvent(evt);
+    const existing = findNavTrackPointNear(world);
+    if (existing) {
+      showNavTrackPointInfo(existing);
+      return;
+    }
+    addNavTrackPointAt(world);
+  }
+
+  function handleNavCanvasPointerUp(evt) {
+    if (Date.now() - (state.lastNavCanvasDragAt || 0) < 250) return;
+    if (Date.now() - (state.lastNavCanvasTapAt || 0) < 350) return;
+    state.lastNavCanvasTapAt = Date.now();
+    const world = navCanvasWorldFromEvent(evt);
+    const existing = findNavTrackPointNear(world);
+    if (existing) {
+      showNavTrackPointInfo(existing);
+      return;
+    }
+    addNavTrackPointAt(world);
   }
 
   function renderCorrections() {
@@ -2275,6 +1344,7 @@ function fmt(n, d = 2) {
   function normalizeImportedTrackPayload(payload) {
     const colors = getImportedTrackColors();
     const tracks = [];
+
     const toPoints = (arr) => Array.isArray(arr) ? arr.map((p) => ({
       x: Number(p?.x || 0),
       y: Number(p?.y || 0),
@@ -2303,11 +1373,23 @@ function fmt(n, d = 2) {
         });
       });
     } else if (Array.isArray(payload?.state?.trail)) {
-      tracks.push({ name: payload?.name || "匯入軌跡 1", color: payload?.color || colors[0], points: toPoints(payload.state.trail) });
+      tracks.push({
+        name: payload?.name || "匯入軌跡 1",
+        color: payload?.color || colors[0],
+        points: toPoints(payload.state.trail)
+      });
     } else if (Array.isArray(payload?.data?.trail)) {
-      tracks.push({ name: payload?.name || "匯入軌跡 1", color: payload?.color || colors[0], points: toPoints(payload.data.trail) });
+      tracks.push({
+        name: payload?.name || "匯入軌跡 1",
+        color: payload?.color || colors[0],
+        points: toPoints(payload.data.trail)
+      });
     } else if (Array.isArray(payload?.path)) {
-      tracks.push({ name: payload?.name || "匯入軌跡 1", color: payload?.color || colors[0], points: toPoints(payload.path) });
+      tracks.push({
+        name: payload?.name || "匯入軌跡 1",
+        color: payload?.color || colors[0],
+        points: toPoints(payload.path)
+      });
     }
 
     return tracks.filter((t) => t.points.length >= 2);
@@ -2411,15 +1493,29 @@ function fmt(n, d = 2) {
 
     drawMapElementsOnCanvas(ctx, true, state.navViewport, wrapEl);
 
+    const currentPoseAnchors = [];
     if (state.showAnchorOverlay && state.savedAnchors.length) {
       ctx.font = "12px system-ui, sans-serif";
-      state.savedAnchors.forEach((a) => {
+      state.savedAnchors.forEach((a, idx) => {
+        if (a?.source === "current-pose") {
+          currentPoseAnchors.push({ anchor: a, idx });
+          return;
+        }
         const pt = viewportWorldToScreen({ x: Number(a.x || 0), y: Number(a.y || 0) }, state.navViewport, wrapEl);
-        const anchorColor = a.source === "current-pose" ? "#d946ef" : "#2563eb";
+        const anchorColor = anchorDisplayColor(a);
+
         ctx.fillStyle = anchorColor;
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, fixedRadius(6), 0, Math.PI * 2);
         ctx.fill();
+
+        if (state.highlightAnchorId === a.id) {
+          ctx.strokeStyle = anchorColor;
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, fixedRadius(14), 0, Math.PI * 2);
+          ctx.stroke();
+        }
 
         if (a.heading != null && Number.isFinite(Number(a.heading))) {
           const rad = (Number(a.heading) * Math.PI) / 180;
@@ -2430,11 +1526,26 @@ function fmt(n, d = 2) {
           ctx.lineTo(pt.x + Math.sin(rad) * 18, pt.y - Math.cos(rad) * 18);
           ctx.stroke();
         }
-        labelBox(ctx, pt.x + 10, pt.y - 10, a.name || "anchor", a.source === "current-pose" ? "#a21caf" : "#1e3a8a");
+        labelBox(ctx, pt.x + 10, pt.y - 10, a.name || "anchor", anchorLabelColor(a));
       });
     }
 
     if (!state.trail.length) return;
+
+    state.importedTracks.forEach((track) => {
+      const importedTrail = getSmoothedTrail(track.points, 2);
+      ctx.strokeStyle = track.color || "#2563eb";
+      ctx.lineWidth = lineWidthForWorld(2.5, state.navViewport);
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      importedTrail.forEach((p, i) => {
+        const pt = viewportWorldToScreen(p, state.navViewport, wrapEl);
+        if (i === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+      });
+      ctx.stroke();
+    });
 
     (state.importedTracks || []).forEach((track) => {
       const importedTrail = getSmoothedTrail(track.points, 2);
@@ -2463,6 +1574,24 @@ function fmt(n, d = 2) {
       else ctx.lineTo(pt.x, pt.y);
     });
     ctx.stroke();
+
+
+    if (state.navTrackPoints.length) {
+      state.navTrackPoints.forEach((p) => {
+        const pt = viewportWorldToScreen(p, state.navViewport, wrapEl);
+        const isSelected = p.id === state.selectedNavTrackPointId;
+        ctx.fillStyle = isSelected ? "#f97316" : "#fb923c";
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, fixedRadius(isSelected ? 8 : 6), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = isSelected ? "#9a3412" : "#c2410c";
+        ctx.lineWidth = isSelected ? 3 : 2;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, fixedRadius(isSelected ? 13 : 10), 0, Math.PI * 2);
+        ctx.stroke();
+        labelBox(ctx, pt.x + 10, pt.y - 10, p.name || "軌跡點", isSelected ? "#9a3412" : "#c2410c");
+      });
+    }
 
     const start = state.trail[0];
     const last = latestPose();
@@ -2532,10 +1661,70 @@ function fmt(n, d = 2) {
     ctx.fill();
 
     drawScaleRuler(ctx, wrapEl, state.navViewport, "bottom-left");
+
+    if (currentPoseAnchors.length) {
+      currentPoseAnchors.forEach(({ anchor: a, idx }) => {
+        const pt = viewportWorldToScreen({ x: Number(a.x || 0), y: Number(a.y || 0) }, state.navViewport, wrapEl);
+        const color = anchorDisplayColor(a);
+        const angle = (-45 + idx * 18) * Math.PI / 180;
+        const badgeOffset = fixedRadius(28 + Math.min(idx, 2) * 8);
+        const badgeX = pt.x + Math.cos(angle) * badgeOffset;
+        const badgeY = pt.y + Math.sin(angle) * badgeOffset;
+
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.fillStyle = color;
+        ctx.lineWidth = state.highlightAnchorId === a.id ? 5 : 3;
+
+        ctx.beginPath();
+        ctx.moveTo(pt.x, pt.y);
+        ctx.lineTo(badgeX, badgeY);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.arc(badgeX, badgeY, fixedRadius(14), 0, Math.PI * 2);
+        ctx.stroke();
+
+        if (state.highlightAnchorId === a.id) {
+          ctx.beginPath();
+          ctx.arc(badgeX, badgeY, fixedRadius(22), 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        const diamondR = fixedRadius(9);
+        ctx.beginPath();
+        ctx.moveTo(badgeX, badgeY - diamondR);
+        ctx.lineTo(badgeX + diamondR, badgeY);
+        ctx.lineTo(badgeX, badgeY + diamondR);
+        ctx.lineTo(badgeX - diamondR, badgeY);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(badgeX, badgeY, fixedRadius(4), 0, Math.PI * 2);
+        ctx.fill();
+
+        if (a.heading != null && Number.isFinite(Number(a.heading))) {
+          const rad = (Number(a.heading) * Math.PI) / 180;
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(badgeX, badgeY);
+          ctx.lineTo(badgeX + Math.sin(rad) * 18, badgeY - Math.cos(rad) * 18);
+          ctx.stroke();
+        }
+
+        labelBox(ctx, badgeX + 18, badgeY - 18, a.name || "目前位置標定點", anchorLabelColor(a));
+        ctx.restore();
+      });
+    }
+
   }
 
 
-  function setNavTarget() {
+  // Legacy drawing snapshot retained for reference; renamed to avoid overriding the real setNavTarget().
+  function drawTrackLegacySnapshot() {
 
     ctx.clearRect(0, 0, TRACK_SIZE, TRACK_SIZE);
     ctx.strokeStyle = "#cbd5e1";
@@ -2555,14 +1744,14 @@ function fmt(n, d = 2) {
         const x = CENTER + Number(a.x || 0) * DEFAULT_WORLD_SCALE;
         const y = CENTER + Number(a.y || 0) * DEFAULT_WORLD_SCALE;
 
-        ctx.fillStyle = "#2563eb";
+        ctx.fillStyle = anchorDisplayColor(a);
         ctx.beginPath();
         ctx.arc(x, y, 6, 0, Math.PI * 2);
         ctx.fill();
 
         if (a.heading != null && Number.isFinite(Number(a.heading))) {
           const rad = (Number(a.heading) * Math.PI) / 180;
-          ctx.strokeStyle = "#2563eb";
+          ctx.strokeStyle = anchorDisplayColor(a);
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.moveTo(x, y);
@@ -2576,7 +1765,7 @@ function fmt(n, d = 2) {
         const metrics = ctx.measureText(label);
         ctx.fillStyle = "rgba(255,255,255,0.9)";
         ctx.fillRect(textX - 4, textY - 12, metrics.width + 8, 18);
-        ctx.fillStyle = "#1e3a8a";
+        ctx.fillStyle = anchorLabelColor(a);
         ctx.fillText(label, textX, textY);
       });
     }
@@ -4324,15 +3513,12 @@ function fmt(n, d = 2) {
           ts: Date.now()
         };
         updateAutoStepCalibration(state.geoReading);
-        if (state.tracking && Number.isFinite(state.geoReading.accuracy) && state.geoReading.accuracy <= 10 && Date.now() - state.lastGeoCorrectionAt > 12000) {
-          applySoftGpsCorrection(state.geoReading, "gps-live");
-        }
         render();
       },
       () => {},
       { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
     );
-    setMessage("開始追蹤。現在會嘗試用加速度峰值偵測步伐來推進軌跡，並可在 GPS 較佳時做手動校正。");
+    setMessage("開始追蹤。現在可直接點導航地圖新增軌跡點；再點已存在的軌跡點可查看座標與距起點軌跡距離。若手機上單點沒反應，請放開手指後再輕點一次。");
     render();
   }
 
@@ -4674,20 +3860,6 @@ function fmt(n, d = 2) {
   function qrUrl(text) {
     return "https://api.qrserver.com/v1/create-qr-code/?size=420x420&data=" + encodeURIComponent(text);
   }
-
-
-  function prefillQrAnchorFromCurrentPose() {
-    const pose = latestPose();
-    const heading = normalizeAngle((state.orientation?.heading ?? pose?.heading ?? 0) || 0);
-    const xInput = $("anchorX");
-    const yInput = $("anchorY");
-    const hInput = $("anchorHeading");
-    if (xInput) xInput.value = fmt(pose?.x || 0, 2);
-    if (yInput) yInput.value = fmt(pose?.y || 0, 2);
-    if (hInput) hInput.value = fmt(heading, 1);
-    generateQr();
-  }
-
   function fillQrInputsFromCurrentPose() {
     const pose = latestPose();
     const heading = normalizeAngle((state.orientation?.heading ?? pose?.heading ?? 0) || 0);
@@ -4706,21 +3878,31 @@ function fmt(n, d = 2) {
 
   function generateQr() {
     const payload = buildQrPayload();
-    const name = $("anchorName").value.trim() || "未命名校正點";
-    $("payloadText").value = payload;
-    $("payloadPreview").textContent = payload;
-    $("anchorTitle").textContent = name;
-    $("qrImage").src = qrUrl(payload);
-    $("btnDownloadQr").href = qrUrl(payload);
-    $("btnDownloadQr").download = (name.replace(/[^\w\u4e00-\u9fff-]+/g, "_") || "indoor-anchor") + ".png";
+    const nameInput = $("anchorName");
+    const payloadText = $("payloadText");
+    const payloadPreview = $("payloadPreview");
+    const anchorTitle = $("anchorTitle");
+    const qrImage = $("qrImage");
+    const btnDownloadQr = $("btnDownloadQr");
+    const name = nameInput?.value.trim() || "未命名校正點";
+    const qrHref = qrUrl(payload);
+
+    if (payloadText) payloadText.value = payload;
+    if (payloadPreview) payloadPreview.textContent = payload;
+    if (anchorTitle) anchorTitle.textContent = name;
+    if (qrImage) qrImage.src = qrHref;
+    if (btnDownloadQr) {
+      btnDownloadQr.href = qrHref;
+      btnDownloadQr.download = (name.replace(/[^\w\u4e00-\u9fff-]+/g, "_") || "indoor-anchor") + ".png";
+    }
   }
 
 
   function loadSavedAnchors() {
     try {
       const raw = localStorage.getItem("indoor_saved_anchors");
-      state.savedAnchors = raw ? JSON.parse(raw) : [];
-      if (!Array.isArray(state.savedAnchors)) state.savedAnchors = [];
+      const parsed = raw ? JSON.parse(raw) : [];
+      state.savedAnchors = Array.isArray(parsed) ? parsed.map((a, idx) => normalizeSavedAnchorRecord(a, idx)).filter(Boolean) : [];
     } catch (e) {
       state.savedAnchors = [];
     }
@@ -4761,16 +3943,8 @@ function fmt(n, d = 2) {
         throw new Error("JSON 格式不正確，找不到 anchors 陣列。");
       }
       const normalized = anchors
-        .map((a, idx) => ({
-          id: a.id || ((crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now() + idx)),
-          name: a.name || `校正點 ${idx + 1}`,
-          x: Number(a.x ?? 0),
-          y: Number(a.y ?? 0),
-          heading: a.heading == null || a.heading === "" ? null : Number(a.heading),
-          payload: a.payload || `INDOOR_ANCHOR:${Number(a.x ?? 0)},${Number(a.y ?? 0)}${a.heading == null || a.heading === "" ? "" : "," + Number(a.heading)}`,
-          createdAt: a.createdAt || new Date().toISOString()
-        }))
-        .filter((a) => Number.isFinite(a.x) && Number.isFinite(a.y));
+        .map((a, idx) => normalizeSavedAnchorRecord(a, idx))
+        .filter(Boolean);
 
       state.savedAnchors = normalized;
       persistSavedAnchors();
@@ -4792,6 +3966,7 @@ function fmt(n, d = 2) {
       x,
       y,
       heading,
+      source: "manual",
       payload: buildQrPayload(),
       createdAt: new Date().toISOString()
     };
@@ -4838,7 +4013,7 @@ function fmt(n, d = 2) {
           <strong>${a.name}</strong>
           <span class="badge">${a.heading == null ? "無方向" : a.heading + "°"}</span>
         </div>
-        <div>x: ${a.x} / y: ${a.y}</div><div style="color:#64748b; font-size:12px;">來源：${a.source === "current-pose" ? "目前位置" : (a.source || "manual")}${a.gps?.accuracy ? " / GPS ±" + fmt(a.gps.accuracy,1) + "m" : ""}</div>
+        <div>x: ${a.x} / y: ${a.y}</div><div style="color:#64748b; font-size:12px;">來源：${a.source === "current-pose" ? "目前位置" : a.source === "gps-fixed" ? "GPS 固定點" : (a.source || "manual")}${a.gps?.accuracy ? " / GPS ±" + fmt(a.gps.accuracy,1) + "m" : ""}</div>
         <div style="margin-top:6px; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; color:#475569; word-break:break-all;">${a.payload}</div>
         <div class="btns" style="margin-top:10px; margin-bottom:0;">
           <button data-anchor-use="${a.id}">載入</button>
@@ -4953,6 +4128,12 @@ function fmt(n, d = 2) {
       e.target.value = "";
     }
   });
+
+  $("btnImportJson")?.addEventListener("click", () => {
+    if (!$("importJsonFile")) {
+      setMessage("找不到匯入欄位 importJsonFile。");
+    }
+  });
   $("btnStepCal").addEventListener("click", beginStepLengthCalibration);
   $("btnSetManualHeading")?.addEventListener("click", setManualHeading);
   $("btnQrCal").addEventListener("click", openQrCalibration);
@@ -5065,6 +4246,13 @@ function fmt(n, d = 2) {
   injectEnhancementUI();
   attachViewportHandlers($("trackCanvasWrap"), $("trackCanvas"), state.navViewport, "nav");
   attachViewportHandlers($("editorCanvasWrap"), $("editorCanvas"), state.editorViewport, "editor");
+  $("trackCanvas")?.addEventListener("click", handleNavCanvasClick);
+  $("trackCanvas")?.addEventListener("pointerup", handleNavCanvasPointerUp);
+  $("trackCanvas")?.addEventListener("touchend", (evt) => {
+    const touch = evt.changedTouches && evt.changedTouches[0];
+    if (!touch) return;
+    handleNavCanvasPointerUp({ clientX: touch.clientX, clientY: touch.clientY });
+  }, { passive: true });
   $("btnTrackFullscreen")?.addEventListener("click", () => toggleWrapFullscreen("trackCanvasWrap"));
   $("btnNavAutoFit")?.addEventListener("click", () => {
     state.navAutoFit = !state.navAutoFit;
@@ -5092,8 +4280,8 @@ function fmt(n, d = 2) {
     ensureNavViewportVisible(state.navAutoFit);
     refreshViewportUI();
   });
-  $("btnGpsAnchorCreate")?.addEventListener("click", createSavedAnchorFromGps);
-  $("btnPoseAnchorCreate")?.addEventListener("click", createAnchorFromCurrentPose);
+    
+
   $("btnUseGpsForDraftAnchor")?.addEventListener("click", createAnchorFromGpsDraft);
   $("btnAnchorCorrection")?.addEventListener("click", () => applyAnchorCorrection($("anchorCorrectionSelect")?.value));
   $("btnGpsFusionCorrection")?.addEventListener("click", async () => {
@@ -5127,10 +4315,9 @@ $("btnEditorAnchor")?.addEventListener("click", () => {
 
   prefillQrAnchorFromCurrentPose();
   loadSavedAnchors();
+  loadNavTrackPoints();
   loadNavHistory();
   loadMapElements();
+  loadPoseSmoothingPreference();
   render();
 })();
-</script>
-</body>
-</html>
