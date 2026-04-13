@@ -90,102 +90,6 @@
     navFollowCurrent: true
   };
 
-  defineStateNamespaces(state);
-
-
-  function defineStateNamespaces(state) {
-    const mapAliases = (target, mapping) => {
-      Object.entries(mapping).forEach(([alias, source]) => {
-        Object.defineProperty(target, alias, {
-          get() { return state[source]; },
-          set(value) { state[source] = value; },
-          enumerable: true,
-          configurable: true
-        });
-      });
-      return target;
-    };
-
-    state.pose = mapAliases({}, {
-      anchor: "anchor",
-      geoReading: "geoReading",
-      trail: "trail",
-      current: "currentPose",
-      filtered: "filteredPose",
-      smoothingAlpha: "poseSmoothingAlpha",
-      corrections: "corrections",
-      importedTracks: "importedTracks",
-      stepCount: "stepCount",
-      stepLength: "stepLength",
-      motionMagnitude: "motionMagnitude",
-      smoothedMagnitude: "smoothedMagnitude",
-      calibratingStepLength: "calibratingStepLength",
-      stepCalStart: "stepCalStart",
-      autoStepCalibration: "autoStepCalibration",
-      lastGeoCorrectionAt: "lastGeoCorrectionAt"
-    });
-
-    state.navigation = mapAliases({}, {
-      targetId: "navTargetId",
-      routeMode: "routeMode",
-      waypointIds: "waypointIds",
-      arrivalThreshold: "arrivalThreshold",
-      activeLegIndex: "activeLegIndex",
-      arrivedTarget: "arrivedTarget",
-      lastArrivalNoticeKey: "lastArrivalNoticeKey",
-      voiceGuideEnabled: "voiceGuideEnabled",
-      currentGuidanceText: "currentGuidanceText",
-      lastSpokenText: "lastSpokenText",
-      lastTurnCueKey: "lastTurnCueKey",
-      startedRouteDistance: "startedRouteDistance",
-      averageWalkingSpeed: "averageWalkingSpeed",
-      sessionState: "navSessionState",
-      sessionStartedAt: "navSessionStartedAt",
-      sessionPausedAt: "navSessionPausedAt",
-      pauseAccumulatedMs: "navPauseAccumulatedMs",
-      history: "navHistory",
-      plannedRoutePoints: "plannedRoutePoints",
-      autoFit: "navAutoFit",
-      followCurrent: "navFollowCurrent",
-      viewport: "navViewport"
-    });
-
-    state.editor = mapAliases({}, {
-      mode: "editorMode",
-      draftPoints: "editorDraftPoints",
-      message: "editorMessage",
-      showMapOverlay: "showMapOverlay",
-      selectedMapElementId: "selectedMapElementId",
-      mapElements: "mapElements",
-      snapEnabled: "snapEnabled",
-      autoIntersectEnabled: "autoIntersectEnabled",
-      snapThreshold: "snapThreshold",
-      viewport: "editorViewport",
-      anchorCreationMode: "anchorCreationMode"
-    });
-
-    state.anchors = mapAliases({}, {
-      saved: "savedAnchors",
-      showOverlay: "showAnchorOverlay",
-      gpsAnchorSampling: "gpsAnchorSampling"
-    });
-
-    state.ui = mapAliases({}, {
-      permissionState: "permissionState",
-      tracking: "tracking",
-      message: "message",
-      exportUrl: "exportUrl",
-      qrScanMode: "qrScanMode",
-      qrStream: "qrStream",
-      positionSampleMode: "positionSampleMode",
-      headingSampleMode: "headingSampleMode",
-      positionSamples: "positionSamples",
-      headingSamples: "headingSamples"
-    });
-
-    return state;
-  }
-
   let geoWatchId = null;
   let positionTimer = null;
   let headingTimer = null;
@@ -880,15 +784,15 @@ function fmt(n, d = 2) {
   function updateFilteredPose() {
     const raw = rawLatestPose();
     if (!raw) return;
-    const prev = state.pose.filtered || { x: raw.x || 0, y: raw.y || 0, heading: raw.heading || 0 };
-    const alpha = Math.max(0.05, Math.min(0.9, Number(state.pose.smoothingAlpha || 0.22)));
+    const prev = state.filteredPose || { x: raw.x || 0, y: raw.y || 0, heading: raw.heading || 0 };
+    const alpha = Math.max(0.05, Math.min(0.9, Number(state.poseSmoothingAlpha || 0.22)));
     const filtered = {
       x: Number(prev.x || 0) + (Number(raw.x || 0) - Number(prev.x || 0)) * alpha,
       y: Number(prev.y || 0) + (Number(raw.y || 0) - Number(prev.y || 0)) * alpha,
       heading: smoothAngleDeg(Number(prev.heading || 0), Number(raw.heading || 0), alpha),
       t: raw.t || Date.now()
     };
-    state.pose.filtered = filtered;
+    state.filteredPose = filtered;
     return filtered;
   }
 

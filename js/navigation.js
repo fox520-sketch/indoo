@@ -1,15 +1,13 @@
 // navigation-related functions extracted from app.js for maintainability.
 
   function setNavTarget() {
-    const nav = state.navigation;
-    const anchors = state.anchors.saved;
     const id = $("navTargetSelect").value;
-    nav.targetId = id;
-    nav.waypointIds = nav.waypointIds.filter(wid => wid !== id);
-    const target = anchors.find(a => a.id === id);
-    nav.activeLegIndex = 0;
-    nav.arrivedTarget = false;
-    nav.lastArrivalNoticeKey = "";
+    state.navTargetId = id;
+    state.waypointIds = state.waypointIds.filter(wid => wid !== id);
+    const target = state.savedAnchors.find(a => a.id === id);
+    state.activeLegIndex = 0;
+    state.arrivedTarget = false;
+    state.lastArrivalNoticeKey = "";
     resetRouteProgressBaseline();
     if (target) {
       setMessage(`已設 ${target.name} 為導航目標。`);
@@ -21,11 +19,10 @@
   }
 
   function clearNavTarget() {
-    const nav = state.navigation;
-    nav.targetId = "";
-    nav.activeLegIndex = 0;
-    nav.arrivedTarget = false;
-    nav.lastArrivalNoticeKey = "";
+    state.navTargetId = "";
+    state.activeLegIndex = 0;
+    state.arrivedTarget = false;
+    state.lastArrivalNoticeKey = "";
     setMessage("已清除導航目標。");
     render();
   }
@@ -187,8 +184,7 @@
   }
 
   function updateArrivalProgress() {
-    const nav = state.navigation;
-    const target = state.anchors.saved.find(a => a.id === nav.targetId);
+    const target = state.savedAnchors.find(a => a.id === state.navTargetId);
     if (!target) return;
 
     const current = latestPose();
@@ -202,10 +198,10 @@
     const legKey = `${active.index}:${active.to.id || active.to.name || "target"}`;
 
     if (dist <= state.arrivalThreshold && state.lastArrivalNoticeKey !== legKey) {
-      nav.lastArrivalNoticeKey = legKey;
+      state.lastArrivalNoticeKey = legKey;
 
       if (active.isFinal) {
-        nav.arrivedTarget = true;
+        state.arrivedTarget = true;
         setMessage(`已接近最終目標：${active.to.name || "目標"}。`);
         speakText(`已到達目標，${active.to.name || "目標"}`);
         if (state.navSessionState !== "idle") finishNavSession("arrived");
