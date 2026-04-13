@@ -3764,211 +3764,231 @@ function fmt(n, d = 2) {
     document.querySelectorAll(".tabbtn").forEach(el => el.classList.toggle("active", el.dataset.page === pageId));
   }
 
-  document.querySelectorAll(".tabbtn").forEach(btn => {
-    btn.addEventListener("click", () => switchPage(btn.dataset.page));
-  });
+  function initTabUi() {
+    document.querySelectorAll(".tabbtn").forEach(btn => {
+      btn.addEventListener("click", () => switchPage(btn.dataset.page));
+    });
+  }
 
-  $("btnPermission").addEventListener("click", requestPermissions);
-  $("btnAnchor").addEventListener("click", setCurrentGpsAsAnchor);
-  $("btnStart").addEventListener("click", startTracking);
-  $("btnStop").addEventListener("click", stopTracking);
-  $("btnReset").addEventListener("click", resetAll);
-  $("btnPosCorrection").addEventListener("click", beginPositionCorrection);
-  $("btnHeadingCorrection").addEventListener("click", beginHeadingCorrection);
-  $("btnExport").addEventListener("click", exportData);
-  $("btnImportJson")?.addEventListener("click", () => {
-    setMessage("請選擇要匯入的 JSON 檔案。");
-  });
-  $("importJsonFile")?.addEventListener("change", async (e) => {
-    const file = e.target?.files?.[0];
-    if (!file) {
-      setMessage("未選擇 JSON 檔案。");
-      return;
-    }
-    setMessage(`已選擇檔案：${file.name}，開始匯入...`);
-    try {
-      await importNavJsonTracks(file);
-    } catch (err) {
-      setMessage("匯入 JSON 失敗：" + err.message);
-    } finally {
-      e.target.value = "";
-    }
-  });
-  $("btnStepCal").addEventListener("click", beginStepLengthCalibration);
-  $("btnSetManualHeading")?.addEventListener("click", setManualHeading);
-  $("btnQrCal").addEventListener("click", openQrCalibration);
-  $("btnQrClose").addEventListener("click", closeQrCalibration);
-  $("stepLength").addEventListener("input", (e) => {
-    state.stepLength = Number(e.target.value);
-    render();
-  });
-  $("toggleAnchorOverlay").addEventListener("change", (e) => {
-    state.showAnchorOverlay = e.target.checked;
-    render();
-  });
-  $("toggleMapOverlay").addEventListener("change", (e) => {
-    state.showMapOverlay = e.target.checked;
-    render();
-  });
-  $("btnSetTarget").addEventListener("click", setNavTarget);
-  $("btnClearTarget").addEventListener("click", clearNavTarget);
-  $("navTargetSelect").addEventListener("change", setNavTarget);
-  $("routeModeSelect").addEventListener("change", setRouteMode);
-  $("routeWaypointsSelect").addEventListener("change", applyWaypointSelection);
-  $("btnApplyRoute").addEventListener("click", applyWaypointSelection);
-  $("btnClearRoute").addEventListener("click", clearRouteWaypoints);
-  $("arrivalThresholdInput").addEventListener("change", (e) => {
-    const v = Number(e.target.value);
-    state.arrivalThreshold = Number.isFinite(v) && v > 0 ? v : 2.0;
-    render();
-  });
-  $("toggleVoiceGuide").addEventListener("change", (e) => {
-    state.voiceGuideEnabled = e.target.checked;
-    if (!state.voiceGuideEnabled && "speechSynthesis" in window) window.speechSynthesis.cancel();
-    render();
-  });
-  $("btnNavSessionStart").addEventListener("click", startNavSession);
-  $("btnNavSessionPause").addEventListener("click", pauseNavSession);
-  $("btnNavSessionResume").addEventListener("click", resumeNavSession);
-  $("btnNavSessionEnd").addEventListener("click", () => finishNavSession("ended"));
-  $("btnExportNavHistory").addEventListener("click", exportNavHistory);
-
-  $("btnEditorIdle").addEventListener("click", () => setEditorMode("idle"));
-  $("btnEditorPoint").addEventListener("click", () => setEditorMode("point"));
-  $("btnEditorLine").addEventListener("click", () => setEditorMode("line"));
-  $("btnEditorArea").addEventListener("click", () => setEditorMode("area"));
-  $("btnEditorUndo").addEventListener("click", undoMapElement);
-  $("btnEditorNormalize").addEventListener("click", () => { normalizeLineNetwork(); render(); });
-  $("btnEditorClear").addEventListener("click", () => {
-    if (!confirm("確定要清空所有地圖元素嗎？")) return;
-    state.mapElements = [];
-    state.editorDraftPoints = [];
-    persistMapElements();
-    setEditorMessage("已清空所有地圖元素。");
-    render();
-  });
-  $("editorNameInput").addEventListener("input", () => render());
-  $("toggleSnapMode").addEventListener("change", (e) => { state.snapEnabled = e.target.checked; render(); });
-  $("toggleAutoIntersect").addEventListener("change", (e) => { state.autoIntersectEnabled = e.target.checked; render(); });
-  $("editorCanvas").addEventListener("click", handleEditorCanvasClick);
-  $("btnUpdateSelectedMapElement").addEventListener("click", updateSelectedMapElementName);
-  $("btnDeleteSelectedMapElement").addEventListener("click", deleteSelectedMapElement);
-  $("btnConvertSelectedToAnchor").addEventListener("click", convertSelectedMapElementToAnchor);
-  $("btnExportMapData").addEventListener("click", exportMapData);
-  $("btnImportMapData").addEventListener("click", () => $("importMapDataFile").click());
-  $("importMapDataFile").addEventListener("change", (e) => {
-    const file = e.target.files && e.target.files[0];
-    importMapData(file);
-    e.target.value = "";
-  });
-
-  $("btnClearNavHistory").addEventListener("click", () => {
-    if (!confirm("確定要清空所有導航歷史嗎？")) return;
-    state.navHistory = [];
-    persistNavHistory();
-  });
-
-  $("btnGenerate").addEventListener("click", generateQr);
-  $("btnUseCurrentPoseForQr")?.addEventListener("click", () => {
-    fillQrInputsFromCurrentPose();
-    generateQr();
-    setMessage("已用目前位置更新 QR。");
-  });
-  $("btnSaveAnchor").addEventListener("click", saveCurrentAnchor);
-  $("btnExportAnchors").addEventListener("click", exportSavedAnchors);
-  $("btnSyncAnchorsToMap").addEventListener("click", syncAllAnchorsToMap);
-  $("btnImportAnchors").addEventListener("click", () => $("importAnchorsFile").click());
-  $("importAnchorsFile").addEventListener("change", (e) => {
-    const file = e.target.files && e.target.files[0];
-    importSavedAnchorsFromFile(file);
-    e.target.value = "";
-  });
-  $("btnClearAnchors").addEventListener("click", () => {
-    if (!confirm("確定要清空所有已儲存校正點嗎？")) return;
-    state.savedAnchors = [];
-    persistSavedAnchors();
-  });
-  $("btnCopy").addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText($("payloadText").value);
-      alert("已複製 QR 內容");
-    } catch (e) {
-      alert("複製失敗，請手動選取文字");
-    }
-  });
-  ["anchorName", "xValue", "yValue", "headingValueInput"].forEach((id) => {
-    $(id).addEventListener("input", generateQr);
-  });
-
-  window.addEventListener("deviceorientation", handleOrientation, true);
-  window.addEventListener("devicemotion", handleMotion, true);
-
-  injectEnhancementUI();
-  attachViewportHandlers($("trackCanvasWrap"), $("trackCanvas"), state.navViewport, "nav");
-  attachViewportHandlers($("editorCanvasWrap"), $("editorCanvas"), state.editorViewport, "editor");
-  $("btnTrackFullscreen")?.addEventListener("click", () => toggleWrapFullscreen("trackCanvasWrap"));
-  $("btnNavAutoFit")?.addEventListener("click", () => {
-    state.navAutoFit = !state.navAutoFit;
-    if (state.navAutoFit) ensureNavViewportVisible(true);
-    refreshViewportUI();
-  });
-  $("btnNavFollow")?.addEventListener("click", () => {
-    state.navFollowCurrent = !state.navFollowCurrent;
-    if (state.navFollowCurrent) centerNavOnCurrentPose();
-    refreshViewportUI();
-  });
-  $("btnNavFitNow")?.addEventListener("click", () => {
-    centerNavOnCurrentPose();
-  });
-  $("btnEditorFullscreen")?.addEventListener("click", () => toggleWrapFullscreen("editorCanvasWrap"));
-  document.addEventListener("fullscreenchange", () => {
-    ensureNavViewportVisible(state.navAutoFit);
-    refreshViewportUI();
-  });
-  document.addEventListener("webkitfullscreenchange", () => {
-    ensureNavViewportVisible(state.navAutoFit);
-    refreshViewportUI();
-  });
-  window.addEventListener("resize", () => {
-    ensureNavViewportVisible(state.navAutoFit);
-    refreshViewportUI();
-  });
-  $("btnGpsAnchorCreate")?.addEventListener("click", createSavedAnchorFromGps);
-  $("btnPoseAnchorCreate")?.addEventListener("click", createAnchorFromCurrentPose);
-  $("btnUseGpsForDraftAnchor")?.addEventListener("click", createAnchorFromGpsDraft);
-  $("btnAnchorCorrection")?.addEventListener("click", () => applyAnchorCorrection($("anchorCorrectionSelect")?.value));
-  $("btnGpsFusionCorrection")?.addEventListener("click", async () => {
-    try {
-      setMessage("以 GPS 柔性校正中，請站定 4 秒。");
-      const sample = await sampleCurrentGps(4000);
-      applySoftGpsCorrection(sample, "gps-manual");
-      setMessage(`已完成 GPS 柔性校正，平均誤差 ${fmt(sample.accuracy, 1)} m。`);
+  function initTrackingUi() {
+    $("btnPermission").addEventListener("click", requestPermissions);
+    $("btnAnchor").addEventListener("click", setCurrentGpsAsAnchor);
+    $("btnStart").addEventListener("click", startTracking);
+    $("btnStop").addEventListener("click", stopTracking);
+    $("btnReset").addEventListener("click", resetAll);
+    $("btnPosCorrection").addEventListener("click", beginPositionCorrection);
+    $("btnHeadingCorrection").addEventListener("click", beginHeadingCorrection);
+    $("btnExport").addEventListener("click", exportData);
+    $("btnImportJson")?.addEventListener("click", () => {
+      setMessage("請選擇要匯入的 JSON 檔案。");
+    });
+    $("importJsonFile")?.addEventListener("change", async (e) => {
+      const file = e.target?.files?.[0];
+      if (!file) {
+        setMessage("未選擇 JSON 檔案。");
+        return;
+      }
+      setMessage(`已選擇檔案：${file.name}，開始匯入...`);
+      try {
+        await importNavJsonTracks(file);
+      } catch (err) {
+        setMessage("匯入 JSON 失敗：" + err.message);
+      } finally {
+        e.target.value = "";
+      }
+    });
+    $("btnStepCal").addEventListener("click", beginStepLengthCalibration);
+    $("btnSetManualHeading")?.addEventListener("click", setManualHeading);
+    $("btnQrCal").addEventListener("click", openQrCalibration);
+    $("btnQrClose").addEventListener("click", closeQrCalibration);
+    $("stepLength").addEventListener("input", (e) => {
+      state.stepLength = Number(e.target.value);
       render();
-    } catch (e) {
-      setMessage("GPS 柔性校正失敗：" + e.message);
-    }
-  });
+    });
+    window.addEventListener("deviceorientation", handleOrientation, true);
+    window.addEventListener("devicemotion", handleMotion, true);
+  }
+
+  function initNavigationUi() {
+    $("toggleAnchorOverlay").addEventListener("change", (e) => {
+      state.showAnchorOverlay = e.target.checked;
+      render();
+    });
+    $("toggleMapOverlay").addEventListener("change", (e) => {
+      state.showMapOverlay = e.target.checked;
+      render();
+    });
+    $("btnSetTarget").addEventListener("click", setNavTarget);
+    $("btnClearTarget").addEventListener("click", clearNavTarget);
+    $("navTargetSelect").addEventListener("change", setNavTarget);
+    $("routeModeSelect").addEventListener("change", setRouteMode);
+    $("routeWaypointsSelect").addEventListener("change", applyWaypointSelection);
+    $("btnApplyRoute").addEventListener("click", applyWaypointSelection);
+    $("btnClearRoute").addEventListener("click", clearRouteWaypoints);
+    $("arrivalThresholdInput").addEventListener("change", (e) => {
+      const v = Number(e.target.value);
+      state.arrivalThreshold = Number.isFinite(v) && v > 0 ? v : 2.0;
+      render();
+    });
+    $("toggleVoiceGuide").addEventListener("change", (e) => {
+      state.voiceGuideEnabled = e.target.checked;
+      if (!state.voiceGuideEnabled && "speechSynthesis" in window) window.speechSynthesis.cancel();
+      render();
+    });
+    $("btnNavSessionStart").addEventListener("click", startNavSession);
+    $("btnNavSessionPause").addEventListener("click", pauseNavSession);
+    $("btnNavSessionResume").addEventListener("click", resumeNavSession);
+    $("btnNavSessionEnd").addEventListener("click", () => finishNavSession("ended"));
+    $("btnExportNavHistory").addEventListener("click", exportNavHistory);
+    $("btnClearNavHistory").addEventListener("click", () => {
+      if (!confirm("確定要清空所有導航歷史嗎？")) return;
+      state.navHistory = [];
+      persistNavHistory();
+    });
+  }
+
+  function initEditorUi() {
+    $("btnEditorIdle").addEventListener("click", () => setEditorMode("idle"));
+    $("btnEditorPoint").addEventListener("click", () => setEditorMode("point"));
+    $("btnEditorLine").addEventListener("click", () => setEditorMode("line"));
+    $("btnEditorArea").addEventListener("click", () => setEditorMode("area"));
+    $("btnEditorUndo").addEventListener("click", undoMapElement);
+    $("btnEditorNormalize").addEventListener("click", () => { normalizeLineNetwork(); render(); });
+    $("btnEditorClear").addEventListener("click", () => {
+      if (!confirm("確定要清空所有地圖元素嗎？")) return;
+      state.mapElements = [];
+      state.editorDraftPoints = [];
+      persistMapElements();
+      setEditorMessage("已清空所有地圖元素。");
+      render();
+    });
+    $("editorNameInput").addEventListener("input", () => render());
+    $("toggleSnapMode").addEventListener("change", (e) => { state.snapEnabled = e.target.checked; render(); });
+    $("toggleAutoIntersect").addEventListener("change", (e) => { state.autoIntersectEnabled = e.target.checked; render(); });
+    $("editorCanvas").addEventListener("click", handleEditorCanvasClick);
+    $("btnUpdateSelectedMapElement").addEventListener("click", updateSelectedMapElementName);
+    $("btnDeleteSelectedMapElement").addEventListener("click", deleteSelectedMapElement);
+    $("btnConvertSelectedToAnchor").addEventListener("click", convertSelectedMapElementToAnchor);
+    $("btnExportMapData").addEventListener("click", exportMapData);
+    $("btnImportMapData").addEventListener("click", () => $("importMapDataFile").click());
+    $("importMapDataFile").addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      importMapData(file);
+      e.target.value = "";
+    });
+    $("btnEditorAnchor")?.addEventListener("click", () => {
+      state.anchorCreationMode = true;
+      setEditorMode("point");
+      setEditorMessage("標定點模式：在地圖上點一下直接新增標定點。");
+      render();
+    });
+  }
+
+  function initQrUi() {
+    $("btnGenerate").addEventListener("click", generateQr);
+    $("btnUseCurrentPoseForQr")?.addEventListener("click", () => {
+      fillQrInputsFromCurrentPose();
+      generateQr();
+      setMessage("已用目前位置更新 QR。");
+    });
+    $("btnSaveAnchor").addEventListener("click", saveCurrentAnchor);
+    $("btnExportAnchors").addEventListener("click", exportSavedAnchors);
+    $("btnSyncAnchorsToMap").addEventListener("click", syncAllAnchorsToMap);
+    $("btnImportAnchors").addEventListener("click", () => $("importAnchorsFile").click());
+    $("importAnchorsFile").addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      importSavedAnchorsFromFile(file);
+      e.target.value = "";
+    });
+    $("btnClearAnchors").addEventListener("click", () => {
+      if (!confirm("確定要清空所有已儲存校正點嗎？")) return;
+      state.savedAnchors = [];
+      persistSavedAnchors();
+    });
+    $("btnCopy").addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText($("payloadText").value);
+        alert("已複製 QR 內容");
+      } catch (e) {
+        alert("複製失敗，請手動選取文字");
+      }
+    });
+    ["anchorName", "xValue", "yValue", "headingValueInput"].forEach((id) => {
+      $(id).addEventListener("input", generateQr);
+    });
+    $("btnGpsAnchorCreate")?.addEventListener("click", createSavedAnchorFromGps);
+    $("btnPoseAnchorCreate")?.addEventListener("click", createAnchorFromCurrentPose);
+    $("btnUseGpsForDraftAnchor")?.addEventListener("click", createAnchorFromGpsDraft);
+    $("btnAnchorCorrection")?.addEventListener("click", () => applyAnchorCorrection($("anchorCorrectionSelect")?.value));
+    $("btnGpsFusionCorrection")?.addEventListener("click", async () => {
+      try {
+        setMessage("以 GPS 柔性校正中，請站定 4 秒。");
+        const sample = await sampleCurrentGps(4000);
+        applySoftGpsCorrection(sample, "gps-manual");
+        setMessage(`已完成 GPS 柔性校正，平均誤差 ${fmt(sample.accuracy, 1)} m。`);
+        render();
+      } catch (e) {
+        setMessage("GPS 柔性校正失敗：" + e.message);
+      }
+    });
+  }
+
+  function initEnhancementUi() {
+    injectEnhancementUI();
+    attachViewportHandlers($("trackCanvasWrap"), $("trackCanvas"), state.navViewport, "nav");
+    attachViewportHandlers($("editorCanvasWrap"), $("editorCanvas"), state.editorViewport, "editor");
+    $("btnTrackFullscreen")?.addEventListener("click", () => toggleWrapFullscreen("trackCanvasWrap"));
+    $("btnNavAutoFit")?.addEventListener("click", () => {
+      state.navAutoFit = !state.navAutoFit;
+      if (state.navAutoFit) ensureNavViewportVisible(true);
+      refreshViewportUI();
+    });
+    $("btnNavFollow")?.addEventListener("click", () => {
+      state.navFollowCurrent = !state.navFollowCurrent;
+      if (state.navFollowCurrent) centerNavOnCurrentPose();
+      refreshViewportUI();
+    });
+    $("btnNavFitNow")?.addEventListener("click", () => {
+      centerNavOnCurrentPose();
+    });
+    $("btnEditorFullscreen")?.addEventListener("click", () => toggleWrapFullscreen("editorCanvasWrap"));
+    document.addEventListener("fullscreenchange", () => {
+      ensureNavViewportVisible(state.navAutoFit);
+      refreshViewportUI();
+    });
+    document.addEventListener("webkitfullscreenchange", () => {
+      ensureNavViewportVisible(state.navAutoFit);
+      refreshViewportUI();
+    });
+    window.addEventListener("resize", () => {
+      ensureNavViewportVisible(state.navAutoFit);
+      refreshViewportUI();
+    });
     $("smoothStrengthSlider")?.addEventListener("input", (e) => {
-    const alpha = Number(e.target.value || 0.22);
-    state.poseSmoothingAlpha = alpha;
-    state.poseSmoothingPreset = smoothingLabel(alpha);
-    refreshSmoothingUi();
-    render();
-  });
-  $("smoothStrengthSlider")?.addEventListener("change", (e) => {
-    setPoseSmoothingAlpha(Number(e.target.value || 0.22));
-  });
+      const alpha = Number(e.target.value || 0.22);
+      state.poseSmoothingAlpha = alpha;
+      state.poseSmoothingPreset = smoothingLabel(alpha);
+      refreshSmoothingUi();
+      render();
+    });
+    $("smoothStrengthSlider")?.addEventListener("change", (e) => {
+      setPoseSmoothingAlpha(Number(e.target.value || 0.22));
+    });
+  }
 
-$("btnEditorAnchor")?.addEventListener("click", () => {
-    state.anchorCreationMode = true;
-    setEditorMode("point");
-    setEditorMessage("標定點模式：在地圖上點一下直接新增標定點。");
+  function initApp() {
+    initTabUi();
+    initTrackingUi();
+    initNavigationUi();
+    initEditorUi();
+    initQrUi();
+    initEnhancementUi();
+    prefillQrAnchorFromCurrentPose();
+    loadSavedAnchors();
+    loadNavHistory();
+    loadMapElements();
     render();
-  });
+  }
 
-  prefillQrAnchorFromCurrentPose();
-  loadSavedAnchors();
-  loadNavHistory();
-  loadMapElements();
-  render();
+  initApp();
 })();
