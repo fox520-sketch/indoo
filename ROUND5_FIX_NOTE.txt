@@ -1,2 +1,0 @@
-This package reverts the round5 state namespace alias changes and keeps the stable round4 modular structure.
-Reason: round5 introduced compatibility risks by mixing new nested state aliases with existing flat state access.
