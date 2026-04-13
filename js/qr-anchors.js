@@ -128,12 +128,13 @@
   }
 
   function saveCurrentAnchor() {
+    const anchors = state.anchors.saved;
     const draft = currentAnchorDraft();
-    const exists = state.savedAnchors.findIndex(a => a.name === draft.name);
+    const exists = anchors.findIndex(a => a.name === draft.name);
     if (exists >= 0) {
-      state.savedAnchors[exists] = draft;
+      anchors[exists] = draft;
     } else {
-      state.savedAnchors.unshift(draft);
+      anchors.unshift(draft);
     }
     persistSavedAnchors();
     setMessage(`已儲存校正點：${draft.name}`);
@@ -157,12 +158,13 @@
 
   function renderSavedAnchors() {
     const el = $("anchorList");
+    const anchors = state.anchors.saved;
     if (!el) return;
-    if (!state.savedAnchors.length) {
+    if (!anchors.length) {
       el.innerHTML = '<div class="item">尚未儲存任何校正點。</div>';
       return;
     }
-    el.innerHTML = state.savedAnchors.map((a) => `
+    el.innerHTML = anchors.map((a) => `
       <div class="item">
         <div class="item-top">
           <strong>${a.name}</strong>
@@ -187,7 +189,7 @@
     });
     el.querySelectorAll("[data-anchor-copy]").forEach(btn => {
       btn.addEventListener("click", async () => {
-        const a = state.savedAnchors.find(x => x.id === btn.getAttribute("data-anchor-copy"));
+        const a = anchors.find(x => x.id === btn.getAttribute("data-anchor-copy"));
         if (!a) return;
         try {
           await navigator.clipboard.writeText(a.payload);

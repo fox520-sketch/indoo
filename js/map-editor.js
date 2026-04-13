@@ -1,8 +1,9 @@
 // map editor and route-network functions extracted from app.js for maintainability.
 
   function setEditorMode(mode) {
-    state.editorMode = mode;
-    state.editorDraftPoints = [];
+    const editor = state.editor;
+    editor.mode = mode;
+    editor.draftPoints = [];
     const modeText = mode === "point" ? "point" : mode === "line" ? "line" : mode === "area" ? "area" : "idle";
     setEditorMessage(
       mode === "point" ? "點位模式：點一下畫布建立點位。" :
