@@ -103,6 +103,42 @@
   const canvas = $("trackCanvas");
   const ctx = canvas.getContext("2d");
 
+  function on(id, eventName, handler, options) {
+    const el = $(id);
+    if (!el) return null;
+    el.addEventListener(eventName, handler, options);
+    return el;
+  }
+
+  function onClick(id, handler, options) {
+    return on(id, "click", handler, options);
+  }
+
+  function onChange(id, handler, options) {
+    return on(id, "change", handler, options);
+  }
+
+  function onInput(id, handler, options) {
+    return on(id, "input", handler, options);
+  }
+
+  function bindFileImport(buttonId, inputId, importer) {
+    onClick(buttonId, () => $(inputId)?.click());
+    onChange(inputId, (e) => {
+      const file = e.target.files && e.target.files[0];
+      importer(file);
+      e.target.value = "";
+    });
+  }
+
+  function bindToggleRender(id, assign) {
+    onChange(id, (e) => {
+      assign(e.target.checked);
+      render();
+    });
+  }
+
+
   function activeCanvasScale(viewport) {
     return DEFAULT_CANVAS_SCALE * (viewport?.scale || 1);
   }
@@ -3810,37 +3846,31 @@ function fmt(n, d = 2) {
   }
 
   function initNavigationUi() {
-    $("toggleAnchorOverlay").addEventListener("change", (e) => {
-      state.showAnchorOverlay = e.target.checked;
-      render();
-    });
-    $("toggleMapOverlay").addEventListener("change", (e) => {
-      state.showMapOverlay = e.target.checked;
-      render();
-    });
-    $("btnSetTarget").addEventListener("click", setNavTarget);
-    $("btnClearTarget").addEventListener("click", clearNavTarget);
-    $("navTargetSelect").addEventListener("change", setNavTarget);
-    $("routeModeSelect").addEventListener("change", setRouteMode);
-    $("routeWaypointsSelect").addEventListener("change", applyWaypointSelection);
-    $("btnApplyRoute").addEventListener("click", applyWaypointSelection);
-    $("btnClearRoute").addEventListener("click", clearRouteWaypoints);
-    $("arrivalThresholdInput").addEventListener("change", (e) => {
+    bindToggleRender("toggleAnchorOverlay", (checked) => { state.showAnchorOverlay = checked; });
+    bindToggleRender("toggleMapOverlay", (checked) => { state.showMapOverlay = checked; });
+    onClick("btnSetTarget", setNavTarget);
+    onClick("btnClearTarget", clearNavTarget);
+    onChange("navTargetSelect", setNavTarget);
+    onChange("routeModeSelect", setRouteMode);
+    onChange("routeWaypointsSelect", applyWaypointSelection);
+    onClick("btnApplyRoute", applyWaypointSelection);
+    onClick("btnClearRoute", clearRouteWaypoints);
+    onChange("arrivalThresholdInput", (e) => {
       const v = Number(e.target.value);
       state.arrivalThreshold = Number.isFinite(v) && v > 0 ? v : 2.0;
       render();
     });
-    $("toggleVoiceGuide").addEventListener("change", (e) => {
+    onChange("toggleVoiceGuide", (e) => {
       state.voiceGuideEnabled = e.target.checked;
       if (!state.voiceGuideEnabled && "speechSynthesis" in window) window.speechSynthesis.cancel();
       render();
     });
-    $("btnNavSessionStart").addEventListener("click", startNavSession);
-    $("btnNavSessionPause").addEventListener("click", pauseNavSession);
-    $("btnNavSessionResume").addEventListener("click", resumeNavSession);
-    $("btnNavSessionEnd").addEventListener("click", () => finishNavSession("ended"));
-    $("btnExportNavHistory").addEventListener("click", exportNavHistory);
-    $("btnClearNavHistory").addEventListener("click", () => {
+    onClick("btnNavSessionStart", startNavSession);
+    onClick("btnNavSessionPause", pauseNavSession);
+    onClick("btnNavSessionResume", resumeNavSession);
+    onClick("btnNavSessionEnd", () => finishNavSession("ended"));
+    onClick("btnExportNavHistory", exportNavHistory);
+    onClick("btnClearNavHistory", () => {
       if (!confirm("確定要清空所有導航歷史嗎？")) return;
       state.navHistory = [];
       persistNavHistory();
@@ -3848,13 +3878,13 @@ function fmt(n, d = 2) {
   }
 
   function initEditorUi() {
-    $("btnEditorIdle").addEventListener("click", () => setEditorMode("idle"));
-    $("btnEditorPoint").addEventListener("click", () => setEditorMode("point"));
-    $("btnEditorLine").addEventListener("click", () => setEditorMode("line"));
-    $("btnEditorArea").addEventListener("click", () => setEditorMode("area"));
-    $("btnEditorUndo").addEventListener("click", undoMapElement);
-    $("btnEditorNormalize").addEventListener("click", () => { normalizeLineNetwork(); render(); });
-    $("btnEditorClear").addEventListener("click", () => {
+    onClick("btnEditorIdle", () => setEditorMode("idle"));
+    onClick("btnEditorPoint", () => setEditorMode("point"));
+    onClick("btnEditorLine", () => setEditorMode("line"));
+    onClick("btnEditorArea", () => setEditorMode("area"));
+    onClick("btnEditorUndo", undoMapElement);
+    onClick("btnEditorNormalize", () => { normalizeLineNetwork(); render(); });
+    onClick("btnEditorClear", () => {
       if (!confirm("確定要清空所有地圖元素嗎？")) return;
       state.mapElements = [];
       state.editorDraftPoints = [];
@@ -3862,21 +3892,16 @@ function fmt(n, d = 2) {
       setEditorMessage("已清空所有地圖元素。");
       render();
     });
-    $("editorNameInput").addEventListener("input", () => render());
-    $("toggleSnapMode").addEventListener("change", (e) => { state.snapEnabled = e.target.checked; render(); });
-    $("toggleAutoIntersect").addEventListener("change", (e) => { state.autoIntersectEnabled = e.target.checked; render(); });
+    onInput("editorNameInput", () => render());
+    bindToggleRender("toggleSnapMode", (checked) => { state.snapEnabled = checked; });
+    bindToggleRender("toggleAutoIntersect", (checked) => { state.autoIntersectEnabled = checked; });
     $("editorCanvas").addEventListener("click", handleEditorCanvasClick);
-    $("btnUpdateSelectedMapElement").addEventListener("click", updateSelectedMapElementName);
-    $("btnDeleteSelectedMapElement").addEventListener("click", deleteSelectedMapElement);
-    $("btnConvertSelectedToAnchor").addEventListener("click", convertSelectedMapElementToAnchor);
-    $("btnExportMapData").addEventListener("click", exportMapData);
-    $("btnImportMapData").addEventListener("click", () => $("importMapDataFile").click());
-    $("importMapDataFile").addEventListener("change", (e) => {
-      const file = e.target.files && e.target.files[0];
-      importMapData(file);
-      e.target.value = "";
-    });
-    $("btnEditorAnchor")?.addEventListener("click", () => {
+    onClick("btnUpdateSelectedMapElement", updateSelectedMapElementName);
+    onClick("btnDeleteSelectedMapElement", deleteSelectedMapElement);
+    onClick("btnConvertSelectedToAnchor", convertSelectedMapElementToAnchor);
+    onClick("btnExportMapData", exportMapData);
+    bindFileImport("btnImportMapData", "importMapDataFile", importMapData);
+    onClick("btnEditorAnchor", () => {
       state.anchorCreationMode = true;
       setEditorMode("point");
       setEditorMessage("標定點模式：在地圖上點一下直接新增標定點。");
@@ -3885,27 +3910,22 @@ function fmt(n, d = 2) {
   }
 
   function initQrUi() {
-    $("btnGenerate").addEventListener("click", generateQr);
-    $("btnUseCurrentPoseForQr")?.addEventListener("click", () => {
+    onClick("btnGenerate", generateQr);
+    onClick("btnUseCurrentPoseForQr", () => {
       fillQrInputsFromCurrentPose();
       generateQr();
       setMessage("已用目前位置更新 QR。");
     });
-    $("btnSaveAnchor").addEventListener("click", saveCurrentAnchor);
-    $("btnExportAnchors").addEventListener("click", exportSavedAnchors);
-    $("btnSyncAnchorsToMap").addEventListener("click", syncAllAnchorsToMap);
-    $("btnImportAnchors").addEventListener("click", () => $("importAnchorsFile").click());
-    $("importAnchorsFile").addEventListener("change", (e) => {
-      const file = e.target.files && e.target.files[0];
-      importSavedAnchorsFromFile(file);
-      e.target.value = "";
-    });
-    $("btnClearAnchors").addEventListener("click", () => {
+    onClick("btnSaveAnchor", saveCurrentAnchor);
+    onClick("btnExportAnchors", exportSavedAnchors);
+    onClick("btnSyncAnchorsToMap", syncAllAnchorsToMap);
+    bindFileImport("btnImportAnchors", "importAnchorsFile", importSavedAnchorsFromFile);
+    onClick("btnClearAnchors", () => {
       if (!confirm("確定要清空所有已儲存校正點嗎？")) return;
       state.savedAnchors = [];
       persistSavedAnchors();
     });
-    $("btnCopy").addEventListener("click", async () => {
+    onClick("btnCopy", async () => {
       try {
         await navigator.clipboard.writeText($("payloadText").value);
         alert("已複製 QR 內容");
@@ -3914,13 +3934,13 @@ function fmt(n, d = 2) {
       }
     });
     ["anchorName", "xValue", "yValue", "headingValueInput"].forEach((id) => {
-      $(id).addEventListener("input", generateQr);
+      onInput(id, generateQr);
     });
-    $("btnGpsAnchorCreate")?.addEventListener("click", createSavedAnchorFromGps);
-    $("btnPoseAnchorCreate")?.addEventListener("click", createAnchorFromCurrentPose);
-    $("btnUseGpsForDraftAnchor")?.addEventListener("click", createAnchorFromGpsDraft);
-    $("btnAnchorCorrection")?.addEventListener("click", () => applyAnchorCorrection($("anchorCorrectionSelect")?.value));
-    $("btnGpsFusionCorrection")?.addEventListener("click", async () => {
+    onClick("btnGpsAnchorCreate", createSavedAnchorFromGps);
+    onClick("btnPoseAnchorCreate", createAnchorFromCurrentPose);
+    onClick("btnUseGpsForDraftAnchor", createAnchorFromGpsDraft);
+    onClick("btnAnchorCorrection", () => applyAnchorCorrection($("anchorCorrectionSelect")?.value));
+    onClick("btnGpsFusionCorrection", async () => {
       try {
         setMessage("以 GPS 柔性校正中，請站定 4 秒。");
         const sample = await sampleCurrentGps(4000);
